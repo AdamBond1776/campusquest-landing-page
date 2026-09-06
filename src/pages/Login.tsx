@@ -15,6 +15,18 @@ export default function Login() {
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  // Clear a field's complaint as soon as it is being corrected, so stale errors
+  // never sit under freshly typed input.
+  const handleEmailChange = (value: string) => {
+    setEmail(value);
+    if (fieldErrors.email) setFieldErrors((prev) => ({ ...prev, email: undefined }));
+  };
+
+  const handlePasswordChange = (value: string) => {
+    setPassword(value);
+    if (fieldErrors.password) setFieldErrors((prev) => ({ ...prev, password: undefined }));
+  };
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (submitting) return;
@@ -73,7 +85,7 @@ export default function Login() {
                 label="School email"
                 type="email"
                 value={email}
-                onChange={setEmail}
+                onChange={handleEmailChange}
                 placeholder="you@uri.edu"
                 autoComplete="email"
                 error={fieldErrors.email}
@@ -84,7 +96,7 @@ export default function Login() {
                 label="Password"
                 type="password"
                 value={password}
-                onChange={setPassword}
+                onChange={handlePasswordChange}
                 placeholder="Your password"
                 autoComplete="current-password"
                 error={fieldErrors.password}

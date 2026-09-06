@@ -92,6 +92,18 @@ export default function Onboarding() {
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  // Clear a field's complaint as soon as it is being corrected, so stale errors
+  // never sit under freshly typed input.
+  const handleEmailChange = (value: string) => {
+    setEmail(value);
+    if (fieldErrors.email) setFieldErrors((prev) => ({ ...prev, email: undefined }));
+  };
+
+  const handlePasswordChange = (value: string) => {
+    setPassword(value);
+    if (fieldErrors.password) setFieldErrors((prev) => ({ ...prev, password: undefined }));
+  };
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (submitting || !role || !plan) return;
@@ -206,8 +218,8 @@ export default function Onboarding() {
                 plan={plan}
                 email={email}
                 password={password}
-                onEmail={setEmail}
-                onPassword={setPassword}
+                onEmail={handleEmailChange}
+                onPassword={handlePasswordChange}
                 onPlanSelect={handlePlanSelect}
                 onSubmit={handleSubmit}
                 fieldErrors={fieldErrors}
