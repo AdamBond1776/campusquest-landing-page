@@ -1,11 +1,55 @@
-import { Link } from 'react-router-dom';
-import { Compass, ArrowLeft } from 'lucide-react';
+import { useState, type FormEvent } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Compass, ArrowLeft, Loader2 } from 'lucide-react';
+import TextField from '@/components/TextField';
+import FormAlert from '@/components/FormAlert';
+import { signIn } from '@/lib/auth';
+import { validateEmail, validatePassword } from '@/lib/validation';
 
 export default function Login() {
+  const navigate = useNavigate();
+
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
+  const [formError, setFormError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (submitting) return;
+
+    const emailError = validateEmail(email);
+    const passwordError = password ? null : validatePassword(password);
+
+    if (emailError || passwordError) {
+      setFieldErrors({ email: emailError ?? undefined, password: passwordError ?? undefined });
+      setFormError(null);
+      return;
+    }
+
+    setFieldErrors({});
+    setFormError(null);
+    setSubmitting(true);
+
+    const result = await signIn({ email, password });
+
+    if (!result.ok) {
+      setFormError(result.message);
+      setSubmitting(false);
+      return;
+    }
+
+    navigate('/welcome', { state: { email: email.trim(), isNew: false } });
+  };
+
   return (
     <div className="min-h-screen bg-brand-950 text-white flex flex-col">
       <header className="px-5 sm:px-8 py-5">
-        <Link to="/" className="inline-flex items-center gap-2 text-sm text-white/60 hover:text-white transition-colors">
+        <Link
+          to="/"
+          className="inline-flex items-center gap-2 text-sm text-white/60 hover:text-white transition-colors"
+        >
           <ArrowLeft className="w-4 h-4" />
           Back to home
         </Link>
@@ -18,43 +62,58 @@ export default function Login() {
               <Compass className="w-7 h-7" strokeWidth={2.5} />
             </div>
             <h1 className="text-3xl font-extrabold">Welcome back</h1>
-            <p className="mt-3 text-white/60">
-              Log in to see what's happening this week.
-            </p>
+            <p className="mt-3 text-white/60">Log in to see what's happening this week.</p>
           </div>
 
           <div className="bg-white/5 border border-white/10 rounded-2xl p-7 backdrop-blur-sm">
-            <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
-              <div>
-                <label className="block text-sm font-medium text-white/80 mb-1.5">
-                  School email
-                </label>
-                <input
-                  type="email"
-                  placeholder="you@uri.edu"
-                  className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/15 text-white placeholder-white/30 text-sm focus:outline-none focus:border-brand-400 focus:ring-1 focus:ring-brand-400 transition-colors"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-white/80 mb-1.5">
-                  Password
-                </label>
-                <input
-                  type="password"
-                  placeholder="Your password"
-                  className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/15 text-white placeholder-white/30 text-sm focus:outline-none focus:border-brand-400 focus:ring-1 focus:ring-brand-400 transition-colors"
-                />
-              </div>
+            <form className="space-y-4" onSubmit={handleSubmit} noValidate>
+              {formError && <FormAlert message={formError} />}
 
-              <button type="submit" className="btn-gold w-full mt-2">
-                Log in
+              <TextField
+                label="School email"
+                type="email"
+                value={email}
+                onChange={setEmail}
+                placeholder="you@uri.edu"
+                autoComplete="email"
+                error={fieldErrors.email}
+                disabled={submitting}
+              />
+
+              <TextField
+                label="Password"
+                type="password"
+                value={password}
+                onChange={setPassword}
+                placeholder="Your password"
+                autoComplete="current-password"
+                error={fieldErrors.password}
+                disabled={submitting}
+              />
+
+              <button
+                type="submit"
+                disabled={submitting}
+                className="btn-gold w-full mt-2 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Logging in
+                  </>
+                ) : (
+                  'Log in'
+                )}
               </button>
             </form>
           </div>
 
           <p className="mt-6 text-center text-sm text-white/50">
             Don't have an account yet?{' '}
-            <Link to="/signup" className="text-gold-400 font-semibold hover:text-gold-500 transition-colors">
+            <Link
+              to="/signup"
+              className="text-gold-400 font-semibold hover:text-gold-500 transition-colors"
+            >
               Sign up free
             </Link>
           </p>

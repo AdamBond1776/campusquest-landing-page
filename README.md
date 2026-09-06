@@ -25,6 +25,7 @@ The dev server prints a local URL (Vite defaults to port 5173).
 | `npm run preview` | Serve the production build locally |
 | `npm run typecheck` | Type-check the app without emitting output |
 | `npm run lint` | Run ESLint across the project |
+| `npm run og` | Regenerate the social preview image (needs Chrome) |
 
 ## Routes
 
@@ -33,15 +34,43 @@ The dev server prints a local URL (Vite defaults to port 5173).
 | `/` | `src/pages/LandingPage.tsx` | Composes the marketing sections |
 | `/signup` | `src/pages/Onboarding.tsx` | Four-step role, interests, and plan flow |
 | `/login` | `src/pages/Login.tsx` | Login form |
+| `/welcome` | `src/pages/Welcome.tsx` | Post-signup and post-login confirmation |
+
+## Environment variables
+
+Every variable is optional — the app runs with none of them set. Copy
+`.env.example` to `.env` to configure any of the following.
+
+| Variable | Effect when unset |
+| --- | --- |
+| `VITE_SITE_URL` | `og:image`, `og:url`, and `canonical` fall back to relative paths |
+| `VITE_SUPABASE_URL` | Auth uses the local mock instead of Supabase |
+| `VITE_SUPABASE_ANON_KEY` | Same as above; both must be set to enable Supabase |
+
+## Authentication
+
+`src/lib/auth.ts` exposes `signUp` and `signIn`. When both Supabase variables
+are present it calls Supabase auth, passing the selected role, interests, and
+plan through as user metadata. Otherwise it falls back to a `localStorage`-backed
+mock that simulates latency and returns the same duplicate-account and
+bad-credential errors, so the flows are demoable without a backend.
+
+## Social preview image
+
+`public/og-image.png` is generated, not hand-drawn. Edit `scripts/og-image.html`
+and run `npm run og` to re-render it at 1200x630 through headless Chrome. Set
+`CHROME_PATH` if your browser is somewhere unusual.
 
 ## Project layout
 
 ```
 src/
-  components/   Landing page sections (Hero, Pricing, Footer, ...)
+  components/   Landing page sections plus shared form primitives
   pages/        Route-level components
+  lib/          Auth, Supabase client, and validation helpers
   index.css     Tailwind layers and shared button classes
 public/         Static assets copied to the build root
+scripts/        Social preview image generator
 ```
 
 The `@` import alias points at `src/`, configured in both `vite.config.ts` and
@@ -61,5 +90,6 @@ rewrite to `index.html`.
 
 ## Status
 
-The signup, login, and onboarding forms are currently UI only — they do not submit
-anywhere yet. `@supabase/supabase-js` is installed but not yet wired up.
+Pre-launch. The marketing page, onboarding, login, and confirmation flows are
+built and working. Payment collection for the paid tiers is not implemented —
+plan selection is captured at signup but nothing is charged.

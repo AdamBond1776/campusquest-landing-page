@@ -1,10 +1,11 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, type FormEvent } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Compass,
   ArrowLeft,
   ArrowRight,
   Check,
+  Loader2,
   GraduationCap,
   Building2,
   Music,
@@ -22,9 +23,10 @@ import {
   Star,
   Sparkles,
 } from 'lucide-react';
-
-type Role = 'student' | 'organization';
-type Plan = 'free' | 'basic' | 'premium' | 'club';
+import TextField from '@/components/TextField';
+import FormAlert from '@/components/FormAlert';
+import { signUp, type Plan, type Role } from '@/lib/auth';
+import { validateEmail, validatePassword } from '@/lib/validation';
 
 const interestOptions = [
   { icon: Music, label: 'Music' },
@@ -78,12 +80,45 @@ const planOptions: {
 const TOTAL_STEPS = 4;
 
 export default function Onboarding() {
+  const navigate = useNavigate();
+
   const [step, setStep] = useState(0);
   const [role, setRole] = useState<Role | null>(null);
   const [interests, setInterests] = useState<string[]>([]);
   const [plan, setPlan] = useState<Plan | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
+  const [formError, setFormError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (submitting || !role || !plan) return;
+
+    const emailError = validateEmail(email);
+    const passwordError = validatePassword(password);
+
+    if (emailError || passwordError) {
+      setFieldErrors({ email: emailError ?? undefined, password: passwordError ?? undefined });
+      setFormError(null);
+      return;
+    }
+
+    setFieldErrors({});
+    setFormError(null);
+    setSubmitting(true);
+
+    const result = await signUp({ email, password, role, interests, plan });
+
+    if (!result.ok) {
+      setFormError(result.message);
+      setSubmitting(false);
+      return;
+    }
+
+    navigate('/welcome', { state: { email: email.trim(), role, plan, isNew: true } });
+  };
 
   const canProceed = () => {
     if (step === 0) return true; // welcome
@@ -174,6 +209,10 @@ export default function Onboarding() {
                 onEmail={setEmail}
                 onPassword={setPassword}
                 onPlanSelect={handlePlanSelect}
+                onSubmit={handleSubmit}
+                fieldErrors={fieldErrors}
+                formError={formError}
+                submitting={submitting}
               />
             )}
           </div>
@@ -379,6 +418,10 @@ function AccountStep({
   onEmail,
   onPassword,
   onPlanSelect,
+  onSubmit,
+  fieldErrors,
+  formError,
+  submitting,
 }: {
   role: Role | null;
   plan: Plan | null;
@@ -387,6 +430,10 @@ function AccountStep({
   onEmail: (v: string) => void;
   onPassword: (v: string) => void;
   onPlanSelect: (p: Plan) => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  fieldErrors: { email?: string; password?: string };
+  formError: string | null;
+  submitting: boolean;
 }) {
   const isOrg = role === 'organization';
 
@@ -454,42 +501,49 @@ function AccountStep({
       )}
 
       {/* Account form */}
-      <div className="mt-6 space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-white/80 mb-1.5">
-            School email
-          </label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => onEmail(e.target.value)}
-            placeholder="you@uri.edu"
-            className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/15 text-white placeholder-white/30 text-sm focus:outline-none focus:border-brand-400 focus:ring-1 focus:ring-brand-400 transition-colors"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-white/80 mb-1.5">
-            Password
-          </label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => onPassword(e.target.value)}
-            placeholder="Create a password"
-            className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/15 text-white placeholder-white/30 text-sm focus:outline-none focus:border-brand-400 focus:ring-1 focus:ring-brand-400 transition-colors"
-          />
-        </div>
+      <form className="mt-6 space-y-4" onSubmit={onSubmit} noValidate>
+        {formError && <FormAlert message={formError} />}
+
+        <TextField
+          label="School email"
+          type="email"
+          value={email}
+          onChange={onEmail}
+          placeholder={isOrg ? 'you@yourclub.org' : 'you@uri.edu'}
+          autoComplete="email"
+          error={fieldErrors.email}
+          disabled={submitting}
+        />
+
+        <TextField
+          label="Password"
+          type="password"
+          value={password}
+          onChange={onPassword}
+          placeholder="Create a password"
+          autoComplete="new-password"
+          error={fieldErrors.password}
+          disabled={submitting}
+        />
 
         <button
-          type="button"
-          disabled={!email || !password || !plan}
-          onClick={(e) => e.preventDefault()}
+          type="submit"
+          disabled={!email || !password || !plan || submitting}
           className="btn-gold w-full disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0"
         >
-          <Sparkles className="w-4 h-4" />
-          Create my account
+          {submitting ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Creating your account
+            </>
+          ) : (
+            <>
+              <Sparkles className="w-4 h-4" />
+              Create my account
+            </>
+          )}
         </button>
-      </div>
+      </form>
 
       <p className="mt-5 text-center text-sm text-white/50">
         Already have an account?{' '}
