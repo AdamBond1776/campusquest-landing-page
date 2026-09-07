@@ -17,16 +17,31 @@ function str(name: string): string | undefined {
 }
 
 /**
+ * The two-entity structure.
+ *
+ * Hidden Genius Labs LLC holds the intellectual property — the Genius Mining
+ * method, the instrument, the curriculum, and the code — and licenses it to
+ * CampusQuest, Inc., the Delaware C corporation that operates the service and
+ * is the merchant of record.
+ *
+ * Keeping ownership in the holding company and economics in the operating
+ * company is what lets partners take a stake in CampusQuest without acquiring
+ * any claim on the method itself. It also means a university evaluating the
+ * pilot is contracting with the operator, not the IP owner, which is the point
+ * of scoping institutions as evaluators rather than co-developers.
+ */
+export const IP_HOLDER = 'Hidden Genius Labs LLC';
+
+/**
  * The entity that operates CampusQuest and answers for the data.
  *
  * A privacy policy has to name a controller and a postal address; "CampusQuest"
- * is a product, not a legal person. The master brief flags CampusQuest's
- * ownership as unresolved between Nick, URI, and Hidden Genius Labs, so this
- * stays configurable and the site says plainly that it is provisional until
- * CQ_LEGAL_ENTITY is set.
+ * is a product, not a legal person. The exact registered name and address still
+ * come from configuration rather than being hardcoded, so incorporation details
+ * can be corrected without a deploy.
  */
 export function legalEntity(): string | undefined {
-  return str('CQ_LEGAL_ENTITY');
+  return str('CQ_LEGAL_ENTITY') ?? 'CampusQuest, Inc.';
 }
 
 export function legalAddress(): string | undefined {
@@ -38,18 +53,30 @@ export function privacyEmail(): string {
 }
 
 /**
- * True when the operator has not been named yet.
+ * What is still missing from the legal surface.
  *
- * When this is true the documents render a visible provisional banner. Shipping
- * a policy that silently omits the controller is worse than shipping one that
- * admits the gap, because the omission looks deliberate in a dispute.
+ * The documents render a visible banner listing these rather than quietly
+ * omitting them. A policy with a silent hole looks deliberate in a dispute; one
+ * that names its own gaps does not.
  */
+export function legalGaps(): string[] {
+  const gaps: string[] = [];
+  if (!legalAddress()) gaps.push('a registered postal address for the operator');
+  if (!attorneyReviewed()) gaps.push('review by a licensed attorney');
+  return gaps;
+}
+
+/** Set once counsel has signed off, which is not the same as the text existing. */
+export function attorneyReviewed(): boolean {
+  return str('CQ_LEGAL_REVIEWED') === 'true';
+}
+
 export function legalReviewPending(): boolean {
-  return !legalEntity() || !legalAddress();
+  return legalGaps().length > 0;
 }
 
 export function operatorName(): string {
-  return legalEntity() ?? 'the CampusQuest operator (entity to be named)';
+  return legalEntity() ?? 'CampusQuest, Inc.';
 }
 
 /**

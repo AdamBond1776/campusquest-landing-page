@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { AlertTriangle, ArrowLeft } from 'lucide-react';
 import Footer from '@/components/Footer';
-import { LEGAL_EFFECTIVE_DATE, formatLegalDate, legalReviewPending } from '@/lib/legal';
+import { LEGAL_EFFECTIVE_DATE, formatLegalDate, legalGaps } from '@/lib/legal';
 
 type Props = {
   title: string;
@@ -19,7 +19,7 @@ type Props = {
  * column around 68 characters and gets out of the way.
  */
 export default function LegalShell({ title, summary, version, children }: Props) {
-  const provisional = legalReviewPending();
+  const gaps = legalGaps();
 
   return (
     <>
@@ -43,18 +43,18 @@ export default function LegalShell({ title, summary, version, children }: Props)
           </div>
         </header>
 
-        {provisional ? (
+        {gaps.length > 0 ? (
           <div className="max-w-3xl mx-auto px-5 sm:px-8 pt-8">
             <div className="flex gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 sm:p-5">
               <AlertTriangle className="w-5 h-5 shrink-0 text-amber-600 mt-0.5" />
-              <p className="text-sm text-amber-900 leading-relaxed">
-                <span className="font-bold">This document is provisional.</span> The operating
-                entity has not been named yet and this text has not been reviewed by an attorney.
-                It is published because an accurate description of what the software does is better
-                than no notice at all, and because we would rather show you the gap than hide it. It
-                is not a substitute for the reviewed version, which lands before the service charges
-                anyone.
-              </p>
+              <div className="text-sm text-amber-900 leading-relaxed">
+                <p>
+                  <span className="font-bold">This document is provisional.</span> It is accurate
+                  about what the software does, which is the part we can vouch for, but it is still
+                  waiting on {gaps.join(' and ')}. We publish it anyway because an honest
+                  description with a stated gap is better than no notice at all.
+                </p>
+              </div>
             </div>
           </div>
         ) : null}

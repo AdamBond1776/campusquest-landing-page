@@ -1,8 +1,10 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import LegalShell from '@/components/legal/LegalShell';
+import { CONSENT_ASSURANCE_NOTE, MINIMUM_AGE } from '@/lib/age';
 import {
   CONSENT_TIERS,
+  IP_HOLDER,
   PRIVACY_VERSION,
   operatorName,
   privacyEmail,
@@ -46,9 +48,17 @@ export default function PrivacyPage() {
 
       <h2 id="who-we-are">Who operates this service</h2>
       <p>
-        CampusQuest is operated by {operator}
-        {address ? `, ${address}` : ''}. Questions about anything on this page, and any request to
-        see or delete your data, go to{' '}
+        CampusQuest is operated by <strong>{operator}</strong>
+        {address ? `, ${address}` : ''}, a Delaware corporation. It is the company that holds your
+        account, answers for your data, and appears on your card statement.
+      </p>
+      <p>
+        The Genius Mining method and the software are owned by <strong>{IP_HOLDER}</strong> and
+        licensed to {operator}. That split matters to you for one reason only: {IP_HOLDER} does not
+        receive your identified answers. It owns the instrument, not the responses.
+      </p>
+      <p>
+        Questions about anything on this page, and any request to see or delete your data, go to{' '}
         <a href={`mailto:${contact}`}>{contact}</a>. A person reads that address.
       </p>
 
@@ -214,11 +224,35 @@ export default function PrivacyPage() {
         You do not need a reason and asking will not affect your access to anything you paid for.
       </p>
 
-      <h2 id="age">Age</h2>
+      <h2 id="age">Age, and students under 18</h2>
       <p>
-        CampusQuest is for college students aged 18 and over. We do not knowingly collect anything
-        from anyone under 18. If you believe a minor has created an account, write to{' '}
-        <a href={`mailto:${contact}`}>{contact}</a> and we will delete it.
+        The floor is {MINIMUM_AGE}. We do not knowingly collect anything from anyone younger, and if
+        you believe a child has an account, write to <a href={`mailto:${contact}`}>{contact}</a> and
+        we will delete it.
+      </p>
+      <p>
+        Between {MINIMUM_AGE} and 18 you can use CampusQuest, but only after a parent or guardian
+        confirms it. You give us their name and email, we send them a link explaining exactly what
+        we collect, and <strong>your account does nothing at all until they follow it</strong>. They
+        can withdraw at any time, which closes the account and deletes what we hold.
+      </p>
+      <p>
+        What an under-18 account can reach is deliberately narrower than an adult&rsquo;s. The
+        activity directory is open, because it is public information about public campus events.
+        Genius Mining is not, at any age under 18 and regardless of guardian consent, because it
+        asks you to write at length about your own life and sends that writing to a language model.
+        Subscriptions are adult-only too; a guardian can buy a seat, and an institution covering
+        seats covers students of any age.
+      </p>
+      <p>
+        We store the guardian&rsquo;s name and email, when they consented, and which version of
+        these documents they saw. We store your birth year rather than your full date of birth,
+        because the year is enough to apply the rule and the full date is more identifying than we
+        need.
+      </p>
+      <p>
+        One limitation we would rather state than let you assume: {CONSENT_ASSURANCE_NOTE.charAt(0).toLowerCase()}
+        {CONSENT_ASSURANCE_NOTE.slice(1)}
       </p>
 
       <h2 id="security">Security, honestly stated</h2>

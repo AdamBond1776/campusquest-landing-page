@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import LegalShell from '@/components/legal/LegalShell';
-import { TERMS_VERSION, operatorName, privacyEmail } from '@/lib/legal';
+import { MINIMUM_AGE } from '@/lib/age';
+import { IP_HOLDER, TERMS_VERSION, operatorName, privacyEmail } from '@/lib/legal';
 import { FULL_RESTART_FEE, formatPrice } from '@/lib/pricing';
 import { siteUrl } from '@/lib/site';
 
@@ -24,15 +25,24 @@ export default function TermsPage() {
     >
       <h2 id="agreement">The agreement</h2>
       <p>
-        Using CampusQuest means accepting these terms. The service is operated by {operator}. If you
-        do not accept them, do not make an account.
+        Using CampusQuest means accepting these terms. The service is operated by{' '}
+        <strong>{operator}</strong>, a Delaware corporation, under a licence from{' '}
+        <strong>{IP_HOLDER}</strong>, which owns the Genius Mining method and the software. If you
+        do not accept these terms, do not make an account.
       </p>
 
       <h2 id="who">Who can use it</h2>
       <p>
-        You need to be 18 or older and enrolled at, employed by, or otherwise connected to one of
-        the campuses we cover. One account per person. Do not share your sign-in link; anyone
-        holding it can read everything in your account, including your Genius Mining answers.
+        You need to be {MINIMUM_AGE} or older and enrolled at, employed by, or otherwise connected
+        to one of the campuses we cover. One account per person. Do not share your sign-in link;
+        anyone holding it can read everything in your account, including your Genius Mining answers.
+      </p>
+      <p>
+        <strong>If you are under 18</strong>, a parent or guardian has to confirm your account
+        before it does anything, and they are agreeing to these terms alongside you. Under-18
+        accounts can use the activity directory but not Genius Mining, and cannot hold a
+        subscription — a guardian can pay for a seat, or your school can cover one. Your guardian
+        can withdraw at any time, which closes the account.
       </p>
 
       <h2 id="listings">What our activity listings actually promise</h2>
@@ -79,7 +89,26 @@ export default function TermsPage() {
         unreviewed listing on a service that universities are being asked to pay for is a problem we
         would own.
       </p>
-      <p>Do not submit:</p>
+      <h3>Events must clear your university first</h3>
+      <p>
+        This is the firmest rule on the page. <strong>If an event needs your university&rsquo;s
+        permission, it needs that permission before it can appear on CampusQuest, not after.</strong>{' '}
+        Nearly every campus, URI included, requires student organizations to register events through
+        an official process and have them approved by a student activities office before they
+        happen.
+      </p>
+      <p>
+        We follow that process rather than routing around it. When you submit an event we ask you to
+        confirm it has been registered and approved where your school requires it, and we may check.
+        A listing that let students bypass their own university&rsquo;s event rules would be worth
+        less than nothing to us: it would put students at risk, and it would end the institutional
+        relationships this service depends on.
+      </p>
+      <p>
+        Submitting an event you have falsely claimed is approved will get your account closed.
+      </p>
+
+      <h3>Never submit</h3>
       <ul>
         <li>
           <strong>Anything at a private residence.</strong> No exceptions, and no home addresses,
@@ -90,9 +119,8 @@ export default function TermsPage() {
           involving alcohol and people under 21.
         </li>
         <li>
-          <strong>Events that your school requires to be registered but which are not.</strong> If
-          your university has a registration or approval process for student events, we list the
-          approved version or we do not list it.
+          <strong>Any event that requires university approval and does not have it.</strong> See
+          above.
         </li>
         <li>
           Anything harassing, discriminatory, threatening, or unlawful; anything you do not have the
