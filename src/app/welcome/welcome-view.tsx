@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Compass, Mail, Sparkles, CalendarCheck, ArrowLeft } from 'lucide-react';
+import { Compass, Mail, Sparkles, CalendarCheck, ArrowLeft, ArrowRight, Brain } from 'lucide-react';
 import { getCurrentUser, type CurrentUser, type Plan } from '@/lib/auth';
 import { PLANS, formatPrice } from '@/lib/pricing';
 
@@ -13,12 +13,20 @@ const planLabels: Record<Plan, string> = {
   club: `${PLANS.club.name} — ${formatPrice(PLANS.club.price)}/mo`,
 };
 
+/** What the server worked out about this account's access to the instrument. */
+export type GeniusMiningAccess =
+  | { state: 'ready' }
+  | { state: 'upgrade' }
+  | { state: 'hidden' };
+
 export default function WelcomeView({
   isNew,
   initialUser = null,
+  geniusMining = { state: 'hidden' },
 }: {
   isNew: boolean;
   initialUser?: CurrentUser | null;
+  geniusMining?: GeniusMiningAccess;
 }) {
   const [user, setUser] = useState<CurrentUser | null>(initialUser);
 
@@ -136,6 +144,34 @@ export default function WelcomeView({
               ))}
             </ol>
           </div>
+
+          {/* Genius Mining had no way in from anywhere a signed-in student
+              would look, which made the whole thing invisible to the people it
+              was built for. Someone who cannot use it yet is told it exists
+              rather than shown nothing, because that is the reason to upgrade. */}
+          {!isOrg && geniusMining.state !== 'hidden' && (
+            <Link
+              href={geniusMining.state === 'ready' ? '/genius-mining' : '/#pricing'}
+              className="group mt-5 flex items-start gap-4 rounded-2xl border border-gold-500/25 bg-gold-500/[0.08] p-5 transition-colors hover:bg-gold-500/[0.14]"
+            >
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gold-500 text-brand-950">
+                <Brain className="h-5 w-5" strokeWidth={2.5} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="flex items-center gap-1.5 text-sm font-bold text-white">
+                  {geniusMining.state === 'ready'
+                    ? 'Start Genius Mining'
+                    : 'Genius Mining comes with Premium'}
+                  <ArrowRight className="h-3.5 w-3.5 text-gold-400 transition-transform group-hover:translate-x-0.5" />
+                </p>
+                <p className="mt-1 text-sm leading-relaxed text-white/55">
+                  {geniusMining.state === 'ready'
+                    ? 'A questionnaire that works out the role you play rather than the subject you play it in. About forty minutes, split across as many sittings as you like.'
+                    : 'It works out the role you play rather than the subject you play it in, then points you at real things on your campus that need it.'}
+                </p>
+              </div>
+            </Link>
+          )}
 
           {/* A student who has just signed up should land somewhere with
               something in it. Sending them back to the marketing page is a

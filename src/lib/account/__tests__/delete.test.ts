@@ -60,6 +60,7 @@ describe('account deletion', () => {
 
     await getDemandStore().record({
       campus_id: 'uri',
+      school_name: 'University of Rhode Island',
       email_hash: hashEmail(EMAIL),
       email: EMAIL,
       created_at: new Date().toISOString(),
