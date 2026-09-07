@@ -93,7 +93,10 @@ export default function Login() {
               email={sent.email}
               mock={sent.mock}
               alreadyRegistered={sent.alreadyRegistered}
-              continueHref="/welcome"
+              // An unknown address is a new account with no answers on it yet.
+              // The real callback sends those to onboarding, so the dev shortcut
+              // that stands in for the email link has to land in the same place.
+              continueHref={sent.alreadyRegistered ? '/welcome' : '/signup?finish=1'}
               onUseDifferentEmail={retry}
             />
           ) : (

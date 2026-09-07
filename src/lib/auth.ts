@@ -28,6 +28,14 @@ export type AuthResult =
     }
   | { ok: false; message: string };
 
+export type OnboardingInput = {
+  role: Role;
+  interests: string[];
+  plan: Plan;
+};
+
+export type OnboardingResult = { ok: true } | { ok: false; message: string };
+
 export type CurrentUser = {
   email: string;
   role?: Role;
@@ -149,6 +157,30 @@ async function mockSendLink(
   return { ok: true, mock: true, alreadyRegistered: Boolean(existing) };
 }
 
+async function mockCompleteOnboarding(details: OnboardingInput): Promise<OnboardingResult> {
+  await wait(MOCK_LATENCY_MS);
+
+  const session = readJson<StoredSession | null>(SESSION_KEY, null);
+  if (!session?.email) {
+    return { ok: false, message: 'Your session has expired. Request a new link to sign in.' };
+  }
+
+  const accounts = readAccounts();
+  const existing = accounts.find((account) => account.email === session.email);
+
+  if (existing) {
+    existing.role = details.role;
+    existing.interests = details.interests;
+    existing.plan = details.plan;
+  } else {
+    accounts.push({ email: session.email, ...details, createdAt: new Date().toISOString() });
+  }
+  writeJson(ACCOUNTS_KEY, accounts);
+
+  writeJson(SESSION_KEY, { email: session.email, role: details.role, plan: details.plan });
+  return { ok: true };
+}
+
 function readMockSession(): CurrentUser | null {
   const session = readJson<StoredSession | null>(SESSION_KEY, null);
   if (!session?.email) return null;
@@ -206,6 +238,22 @@ export async function signUpWithEmail({
 
   if (error) return { ok: false, message: error.message };
   return { ok: true, mock: false, alreadyRegistered: false };
+}
+
+/**
+ * Writes the onboarding answers onto an account that already has a session.
+ *
+ * A magic link creates the account the first time it is used, so someone who
+ * typed an unknown address into the login form arrives signed in but with no
+ * role, plan or interests. This is how they finish, without a second link.
+ */
+export async function completeOnboarding(details: OnboardingInput): Promise<OnboardingResult> {
+  const supabase = createClient();
+  if (!supabase) return mockCompleteOnboarding(details);
+
+  const { error } = await supabase.auth.updateUser({ data: { ...details } });
+  if (error) return { ok: false, message: error.message };
+  return { ok: true };
 }
 
 export async function getCurrentUser(): Promise<CurrentUser | null> {
