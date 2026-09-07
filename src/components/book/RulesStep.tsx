@@ -33,6 +33,7 @@ export default async function RulesStep({ workingWord }: { workingWord: string }
           alt={`${BOOK.title}: ${BOOK.edition}`}
           width={602}
           height={904}
+          sizes="96px"
           className="w-24 shrink-0 self-start rounded-md shadow-md ring-1 ring-brand-900/10"
         />
 

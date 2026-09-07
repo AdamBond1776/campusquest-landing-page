@@ -73,6 +73,7 @@ export default async function MethodPage() {
                 width={602}
                 height={904}
                 priority
+                sizes="(min-width: 640px) 240px, 208px"
                 className="w-52 rounded-lg shadow-2xl ring-1 ring-white/10 sm:w-60"
               />
             </div>
@@ -109,6 +110,7 @@ export default async function MethodPage() {
                 alt={`Back cover of ${BOOK.title}, describing the eight tools and the four tracks`}
                 width={628}
                 height={904}
+                sizes="(min-width: 1024px) 384px, 100vw"
                 className="w-full max-w-sm rounded-lg shadow-2xl ring-1 ring-white/10"
               />
             </div>
@@ -205,6 +207,7 @@ export default async function MethodPage() {
                   alt=""
                   width={602}
                   height={904}
+                  sizes="96px"
                   className="w-24 shrink-0 rounded-md shadow-lg ring-1 ring-white/10"
                 />
 
