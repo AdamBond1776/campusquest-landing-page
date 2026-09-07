@@ -12,13 +12,22 @@ const planLabels: Record<Plan, string> = {
   club: 'Club & Business — $49/mo',
 };
 
-export default function WelcomeView({ isNew }: { isNew: boolean }) {
-  const [user, setUser] = useState<CurrentUser | null>(null);
+export default function WelcomeView({
+  isNew,
+  initialUser = null,
+}: {
+  isNew: boolean;
+  initialUser?: CurrentUser | null;
+}) {
+  const [user, setUser] = useState<CurrentUser | null>(initialUser);
 
-  // Resolved on the client because the mock that stands in for Supabase keeps
-  // its session in localStorage. Until it lands the page shows the same
-  // generic copy it always showed for a visitor with no email on hand.
+  // Only needed when the server could not resolve the session, which is the
+  // case for the localStorage mock that stands in for Supabase. Until it lands
+  // the page shows the same generic copy it always showed for a visitor with no
+  // email on hand.
   useEffect(() => {
+    if (initialUser) return;
+
     let active = true;
     getCurrentUser().then((resolved) => {
       if (active) setUser(resolved);
@@ -26,7 +35,7 @@ export default function WelcomeView({ isNew }: { isNew: boolean }) {
     return () => {
       active = false;
     };
-  }, []);
+  }, [initialUser]);
 
   const email = user?.email;
   const plan = user?.plan;
