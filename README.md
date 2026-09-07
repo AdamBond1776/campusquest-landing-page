@@ -56,6 +56,7 @@ variable switches on.
 | `/settings` | Account details and self-service deletion |
 | `/guardian/confirm` | Where a parent or guardian lands from the approval email |
 | `/institutions` | Level Up Rhode Island: the public institutional page and the demand button |
+| `/method` | Where Genius Mining comes from: the book, the four tracks, and the full mapping |
 | `/privacy` | Privacy and data use notice |
 | `/terms` | Terms of use |
 | `/genius-mining` | Consent screen and what the instrument is |
@@ -273,6 +274,41 @@ is not named yet.** Until `CQ_LEGAL_ENTITY` and `CQ_LEGAL_ADDRESS` are set, both
 pages render a visible provisional banner rather than quietly omitting the
 controller.
 
+## The book
+
+Genius Mining v1.3 implements the Genius Mining Starter, Tool 7 of *The Business
+of Life: Student Edition* (Adam Bond Devereau, Hidden Genius Labs LLC, 2026).
+`src/lib/book.ts` is the single source of truth and `/method` is the public
+account of it.
+
+Placement was decided by the research, not by what would convert best:
+
+| Where | What appears | Why |
+| --- | --- | --- |
+| `/method` | Covers, the four tracks, the full mapping, buy link at the bottom | A university evaluating the instrument will ask for the methodology |
+| Consent screen | One sentence and a text link. No cover, no price, no button | A student who reads Tool 7 before answering has seen the answer key, and Phase 2 exists to validate the instrument against students who have not |
+| Profile page | The one real purchase prompt, and only after the profile is accepted | The analysis is finished, so nothing there can influence an answer |
+| Everywhere else | Nothing | |
+
+The mapping on `/method` marks Step 3 as **not** implemented, because it is not:
+the book asks for five to nine operating rules in the student's own words and
+the instrument collapses that into one working word. That gap is the honest
+reason a student who has taken the questionnaire still has a reason to read, and
+`src/lib/__tests__/book.test.ts` asserts the row stays marked uncovered. A
+mapping with every row ticked would be a plug rather than an account.
+
+`CQ_BOOK_COMMERCE=false` removes every purchase link and QR code and leaves the
+provenance intact. That switch exists for a specific conversation: a university
+paying for CampusQuest could reasonably read a buy button inside a tool it funds
+as its students being treated as a mailing list, and that objection kills deals
+quietly. Being able to offer the switch unprompted turns it into a reason to
+trust us. A test covers it, because it is a promise made out loud in a pitch.
+
+Covers in `public/book/` are cropped from the supplied spread by luminance
+profiling; the front lands at 601x903, the 6x9 trim a print book uses. QR codes
+are generated server-side from `NEXT_PUBLIC_BOOK_URL` as inline SVG rather than
+shipped as an image, so they cannot drift out of date and need no client script.
+
 ## Genius Mining
 
 `packages/genius-mining` is a workspace package **owned by Hidden Genius Labs LLC**
@@ -350,6 +386,8 @@ optional and documented there. The short version:
 | `CQ_LOCAL_AGE_PATH`, `CQ_LOCAL_REPORTS_PATH` | Age records and corrections fall back to JSON files under the temp directory |
 | `GM_ALLOW_MOCK_IN_PRODUCTION` | Production refuses to run an analysis with no key. Set to `true` only for a staging deploy where fake profiles are understood |
 | `NEXT_PUBLIC_SITE_URL` | Social card and canonical URLs fall back to the Vercel host |
+| `NEXT_PUBLIC_BOOK_URL` | `/method` runs as pure provenance with nothing to click |
+| `CQ_BOOK_COMMERCE` | Purchase links are shown. Set to `false` for an institutional deployment |
 
 ## Supabase setup
 
