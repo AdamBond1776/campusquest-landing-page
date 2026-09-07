@@ -22,6 +22,8 @@ export type ReportStore = {
     note?: string | null
   ): Promise<void>;
   markCredited(ids: string[]): Promise<void>;
+  /** Drops every report this student filed, for account deletion. */
+  forget(reporterHash: string): Promise<void>;
 };
 
 const OPEN: ReportStatus[] = ['pending'];
@@ -104,6 +106,11 @@ class LocalReportStore implements ReportStore {
       wanted.has(row.id) ? { ...row, credited: true } : row
     );
     await this.write(rows);
+  }
+
+  async forget(reporterHash: string): Promise<void> {
+    const rows = await this.read();
+    await this.write(rows.filter((row) => row.reporter_hash !== reporterHash));
   }
 }
 
@@ -192,6 +199,11 @@ class SupabaseReportStore implements ReportStore {
     if (ids.length === 0) return;
     const { error } = await this.client.from(TABLE).update({ credited: true }).in('id', ids);
     if (error) throw new Error(`Crediting reports failed: ${error.message}`);
+  }
+
+  async forget(reporterHash: string): Promise<void> {
+    const { error } = await this.client.from(TABLE).delete().eq('reporter_hash', reporterHash);
+    if (error) throw new Error(`Deleting reports failed: ${error.message}`);
   }
 }
 

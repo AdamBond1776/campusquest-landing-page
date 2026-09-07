@@ -18,6 +18,7 @@ const productLinks = [
 const companyLinks = [
   { href: '/signup', label: 'Sign up' },
   { href: '/login', label: 'Log in' },
+  { href: '/settings', label: 'Account settings' },
   { href: '/privacy', label: 'Privacy and data use' },
   { href: '/terms', label: 'Terms of use' },
 ];

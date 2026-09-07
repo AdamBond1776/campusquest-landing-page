@@ -43,6 +43,8 @@ export type DemandStore = {
   record(interest: CampusInterest): Promise<boolean>;
   countFor(campusId: string): Promise<number>;
   tally(): Promise<DemandTally[]>;
+  /** Drops every campus this student asked about, for account deletion. */
+  forget(emailHash: string): Promise<void>;
 };
 
 /* ------------------------------------------------------------------ *
@@ -94,6 +96,11 @@ class LocalDemandStore implements DemandStore {
       .map(([campus_id, count]) => ({ campus_id, count }))
       .sort((a, b) => b.count - a.count);
   }
+
+  async forget(emailHash: string): Promise<void> {
+    const rows = await this.read();
+    await this.write(rows.filter((row) => row.email_hash !== emailHash));
+  }
 }
 
 /* ------------------------------------------------------------------ *
@@ -137,6 +144,11 @@ class SupabaseDemandStore implements DemandStore {
     return [...counts.entries()]
       .map(([campus_id, count]) => ({ campus_id, count }))
       .sort((a, b) => b.count - a.count);
+  }
+
+  async forget(emailHash: string): Promise<void> {
+    const { error } = await this.client.from(TABLE).delete().eq('email_hash', emailHash);
+    if (error) throw new Error(`Deleting campus interest failed: ${error.message}`);
   }
 }
 

@@ -212,12 +212,18 @@ export default function PrivacyPage() {
 
       <h2 id="your-rights">What you can make us do</h2>
       <p>
-        Email <a href={`mailto:${contact}`}>{contact}</a> and we will, within thirty days:
+        Deleting is immediate and does not go through us:{' '}
+        <Link href="/settings">your account settings</Link> has a button that erases your
+        account and everything listed above, and it runs the moment you confirm.
+      </p>
+      <p>
+        For anything else, email <a href={`mailto:${contact}`}>{contact}</a> and we will,
+        within thirty days:
       </p>
       <ul>
         <li>send you a copy of everything we hold about you;</li>
         <li>correct anything wrong;</li>
-        <li>delete your account and its contents;</li>
+        <li>delete your account for you, if you would rather a person did it;</li>
         <li>tell you exactly which of the companies above holds what.</li>
       </ul>
       <p>

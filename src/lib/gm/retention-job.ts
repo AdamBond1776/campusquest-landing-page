@@ -141,6 +141,20 @@ async function handlePurge(
 }
 
 /**
+ * Runs the same de-identify-then-purge on one record, on demand.
+ *
+ * Account deletion goes through here rather than deleting the row directly, so
+ * the corpus copy the privacy policy promises is made under exactly the rules
+ * the scheduled job uses. If de-identification fails, this refuses and alerts
+ * for the same reason the job does: a late deletion is recoverable, a lost or
+ * re-identifiable corpus record is not.
+ */
+export async function purgeOnDemand(record: GeniusMiningRecord): Promise<JobOutcome> {
+  const store = getStore();
+  return handlePurge(record, corpusModeFor((await store.list()).length));
+}
+
+/**
  * One pass of the retention job.
  *
  * Idempotent: each record yields at most one action per pass, and the timestamp

@@ -21,6 +21,15 @@ export type Store = {
   withRetentionClockRunning(): Promise<GeniusMiningRecord[]>;
   list(): Promise<GeniusMiningRecord[]>;
   writeCorpusRecord(record: CorpusRecord): Promise<void>;
+  /**
+   * Deletes the row outright, for account deletion.
+   *
+   * Distinct from the retention purge, which blanks the answers but keeps the
+   * row so the participant code is not handed out twice. When someone deletes
+   * their account the row itself is identifying — it carries their user id —
+   * so it goes.
+   */
+  remove(participantCode: string): Promise<void>;
 };
 
 const FIRST_SECTION = SECTION_IDS[0];
@@ -81,6 +90,12 @@ class LocalStore implements Store {
     data.records[next.participant_code] = next;
     await this.write(data);
     return next;
+  }
+
+  async remove(participantCode: string): Promise<void> {
+    const data = await this.read();
+    delete data.records[participantCode];
+    await this.write(data);
   }
 
   async createFor(userId: string | null, campusId: string): Promise<GeniusMiningRecord> {
@@ -172,6 +187,14 @@ class SupabaseStore implements Store {
 
     if (error) throw new Error(`Saving ${record.participant_code} failed: ${error.message}`);
     return data as GeniusMiningRecord;
+  }
+
+  async remove(participantCode: string): Promise<void> {
+    const { error } = await this.client
+      .from(TABLE)
+      .delete()
+      .eq('participant_code', participantCode);
+    if (error) throw new Error(`Deleting ${participantCode} failed: ${error.message}`);
   }
 
   async createFor(userId: string | null, campusId: string): Promise<GeniusMiningRecord> {
