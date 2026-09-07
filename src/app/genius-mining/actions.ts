@@ -13,7 +13,7 @@ import {
   runAnalysis,
   settleRun,
   transition,
-  hasGeniusMining,
+  resolveEntitlement,
   type QuestionnaireResponses,
   type Verb,
 } from '@hiddengeniuslabs/genius-mining';
@@ -29,6 +29,20 @@ import { supabaseConfigured } from '@/lib/env';
 export type ActionResult =
   | { ok: true }
   | { ok: false; message: string; errors?: Record<string, string> };
+
+/**
+ * Whether this student may use Genius Mining right now.
+ *
+ * Reads the resolved entitlement rather than the subscription, so a student
+ * whose school bought them a seat is not told to go and subscribe.
+ */
+function entitledToGeniusMining(record: GeniusMiningRecord): boolean {
+  return resolveEntitlement({
+    subscription: record.subscription,
+    coverage: record.coverage,
+    grant: record.admin_grant,
+  }).geniusMining;
+}
 
 async function requireRecord(): Promise<GeniusMiningRecord> {
   const identity = supabaseConfigured() ? await currentIdentity() : await ensureDevIdentity();
@@ -230,7 +244,7 @@ export async function runAnalysisAction(
   const entitlement = canRunAnalysis({
     ledger: record.ledger,
     kind: options.kind ?? 'initial',
-    subscriptionActive: hasGeniusMining(record.subscription),
+    subscriptionActive: entitledToGeniusMining(record),
   });
 
   if (!entitlement.allowed) {
@@ -305,7 +319,7 @@ export async function editProfileField(field: string, revised: string): Promise<
   const record = await requireRecord();
 
   if (!record.profile) return { ok: false, message: 'There is no profile yet.' };
-  if (!canEditProfile(hasGeniusMining(record.subscription))) {
+  if (!canEditProfile(entitledToGeniusMining(record))) {
     return { ok: false, message: 'Editing needs an active membership.' };
   }
 
