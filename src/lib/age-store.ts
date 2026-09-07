@@ -20,8 +20,15 @@ export type AgeStore = {
   get(email: string): Promise<AgeRecord | null>;
   attest(email: string, birthYear: number): Promise<AgeRecord>;
   requestGuardian(email: string, consent: GuardianConsent): Promise<void>;
-  /** Finds the pending request a guardian's link belongs to. */
-  findByTokenHash(hash: string): Promise<{ email: string; record: AgeRecord } | null>;
+  /**
+   * Finds the request a guardian's link belongs to.
+   *
+   * `email` is null once consent has been given, because the address was only
+   * held in order to reach them. The row still resolves so that a guardian who
+   * taps the link a second time is told it is already done, rather than being
+   * told their request does not exist.
+   */
+  findByTokenHash(hash: string): Promise<{ email: string | null; record: AgeRecord } | null>;
   recordConsent(email: string, consentedAt: string): Promise<void>;
   forget(email: string): Promise<void>;
 };
@@ -109,16 +116,16 @@ class LocalAgeStore implements AgeStore {
     if (at === -1) rows.push(row);
     else rows[at] = { ...row, guardian: rows[at].guardian };
     await this.write(rows);
-    return toRecord(row);
+    return toRecord(rows[at === -1 ? rows.length - 1 : at]);
   }
 
   async requestGuardian(email: string, consent: GuardianConsent): Promise<void> {
     await this.patch(email, (row) => ({ ...row, guardian: consent }));
   }
 
-  async findByTokenHash(hash: string): Promise<{ email: string; record: AgeRecord } | null> {
+  async findByTokenHash(hash: string): Promise<{ email: string | null; record: AgeRecord } | null> {
     const row = (await this.read()).find((r) => r.guardian?.token_hash === hash);
-    return row?.email ? { email: row.email, record: toRecord(row) } : null;
+    return row ? { email: row.email, record: toRecord(row) } : null;
   }
 
   async recordConsent(email: string, consentedAt: string): Promise<void> {
@@ -172,14 +179,14 @@ class SupabaseAgeStore implements AgeStore {
     if (error) throw new Error(`Could not save the guardian request: ${error.message}`);
   }
 
-  async findByTokenHash(hash: string): Promise<{ email: string; record: AgeRecord } | null> {
+  async findByTokenHash(hash: string): Promise<{ email: string | null; record: AgeRecord } | null> {
     const { data } = await this.client
       .from(TABLE)
       .select('*')
       .eq('guardian->>token_hash', hash)
       .maybeSingle();
     const row = data as Row | null;
-    return row?.email ? { email: row.email, record: toRecord(row) } : null;
+    return row ? { email: row.email, record: toRecord(row) } : null;
   }
 
   async recordConsent(email: string, consentedAt: string): Promise<void> {

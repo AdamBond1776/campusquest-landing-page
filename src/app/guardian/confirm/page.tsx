@@ -18,7 +18,7 @@ export const dynamic = 'force-dynamic';
 
 type Outcome =
   | { state: 'approved'; student: string }
-  | { state: 'already'; student: string }
+  | { state: 'already' }
   | { state: 'expired' }
   | { state: 'unknown' };
 
@@ -39,10 +39,13 @@ async function resolveToken(token: string | undefined): Promise<Outcome> {
   const consent = found?.record.guardian;
   if (!found || !consent) return { state: 'unknown' };
 
-  const { email } = found;
-
-  if (consent.consented_at) return { state: 'already', student: email };
+  // Checked before the address, because after consent the address is gone by
+  // design and a second tap on the link should still get a sensible answer.
+  if (consent.consented_at) return { state: 'already' };
   if (consentTokenExpired(consent)) return { state: 'expired' };
+
+  const { email } = found;
+  if (!email) return { state: 'unknown' };
 
   await store.recordConsent(email, new Date().toISOString());
   await sendGuardianApproved(email);
@@ -103,8 +106,8 @@ export default async function GuardianConfirmPage({
             title="This one is already approved."
           >
             <p>
-              You have approved the account for {mask(outcome.student)} already, so there
-              is nothing more to do. The link only works once.
+              You have approved this account already, so there is nothing more to do. Your
+              student can sign in and use the directory.
             </p>
           </Panel>
         )}

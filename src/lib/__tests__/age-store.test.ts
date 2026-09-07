@@ -79,9 +79,24 @@ describe('age store', () => {
 
     await store.recordConsent('young@uri.edu', new Date().toISOString());
 
-    // The address was only held so a guardian could be reached; once they have
-    // replied, the token no longer resolves to anything.
-    expect(await store.findByTokenHash(consent.token_hash)).toBeNull();
+    // The address was only held so a guardian could be reached.
+    const found = await store.findByTokenHash(consent.token_hash);
+    expect(found?.email).toBeNull();
+  });
+
+  it('still resolves the token after consent, so a second tap is not an error', async () => {
+    const store = await freshStore();
+    const thisYear = new Date().getUTCFullYear();
+    await store.attest('young@uri.edu', thisYear - 17);
+    const consent = consentFor();
+    await store.requestGuardian('young@uri.edu', consent);
+    await store.recordConsent('young@uri.edu', new Date().toISOString());
+
+    // A guardian who taps the link twice should be told it is already done,
+    // not told their request does not exist.
+    const found = await store.findByTokenHash(consent.token_hash);
+    expect(found).not.toBeNull();
+    expect(found?.record.guardian?.consented_at).not.toBeNull();
   });
 
   it('keeps guardian consent when a student corrects their birth year', async () => {
