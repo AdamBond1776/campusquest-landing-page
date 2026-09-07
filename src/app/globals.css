@@ -69,6 +69,36 @@
   .eyebrow {
     @apply inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.15em] text-brand-600;
   }
+
+  /* Long-form policy text. Kept here rather than in a plugin so the legal pages
+     stay readable without pulling typography config into the build. */
+  .legal-prose h2 {
+    @apply text-xl sm:text-2xl font-extrabold text-slate-900 mt-12 first:mt-0 mb-4 scroll-mt-24;
+  }
+
+  .legal-prose h3 {
+    @apply text-base sm:text-lg font-bold text-slate-900 mt-8 mb-3;
+  }
+
+  .legal-prose p {
+    @apply text-[15px] sm:text-base text-slate-700 leading-relaxed mb-4;
+  }
+
+  .legal-prose ul {
+    @apply list-disc pl-5 mb-5 space-y-2 marker:text-brand-400;
+  }
+
+  .legal-prose li {
+    @apply text-[15px] sm:text-base text-slate-700 leading-relaxed;
+  }
+
+  .legal-prose a {
+    @apply text-brand-700 font-medium underline underline-offset-2 hover:text-brand-800;
+  }
+
+  .legal-prose strong {
+    @apply font-bold text-slate-900;
+  }
 }
 
 @layer utilities {

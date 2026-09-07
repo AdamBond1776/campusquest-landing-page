@@ -16,3 +16,24 @@ function resolve(): string | undefined {
 }
 
 export const siteUrl = resolve();
+
+/**
+ * Social profiles, rendered only when configured.
+ *
+ * These used to be hardcoded icons pointing at `#`. A footer full of links that
+ * go nowhere reads as an abandoned site, so an unset handle now renders nothing
+ * at all rather than a dead link.
+ */
+export type SocialLink = { platform: 'instagram' | 'twitter' | 'linkedin'; href: string };
+
+export function socialLinks(): SocialLink[] {
+  const entries: Array<[SocialLink['platform'], string | undefined]> = [
+    ['instagram', process.env.NEXT_PUBLIC_SOCIAL_INSTAGRAM?.trim()],
+    ['twitter', process.env.NEXT_PUBLIC_SOCIAL_TWITTER?.trim()],
+    ['linkedin', process.env.NEXT_PUBLIC_SOCIAL_LINKEDIN?.trim()],
+  ];
+
+  return entries
+    .filter((entry): entry is [SocialLink['platform'], string] => Boolean(entry[1]))
+    .map(([platform, href]) => ({ platform, href }));
+}
