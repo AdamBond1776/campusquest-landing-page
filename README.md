@@ -34,7 +34,8 @@ variable switches on.
 | `npm run lint` | ESLint across the repo |
 | `npm run test` | Vitest suite (once) |
 | `npm run test:watch` | Vitest in watch mode |
-| `npm run smoke` | Browser smoke test against a running dev server (needs Chrome) |
+| `npm run smoke` | Browser smoke test of auth and consent (needs Chrome) |
+| `npm run smoke:gm` | Browser walkthrough of the whole instrument (needs Chrome) |
 | `npm run build:check` | Build into a scratch directory, safe to run while `dev` is up |
 | `npm run og` | Regenerate the social card image (needs Chrome) |
 | `npm run gm:prompts` | Rebuild the bundled prompt module from the source `.txt` files |
@@ -180,8 +181,14 @@ starts by clicking a checkbox purely to prove React is attached.
 
 ```sh
 npm run dev          # in one shell
-npm run smoke        # in another
+npm run smoke        # in another — auth and consent
+npm run smoke:gm     # the whole instrument, consent through advisor printout
 ```
+
+`smoke:gm` deliberately drives the awkward case rather than a clean one. It ties
+the verb count three against three and puts both C1 picks on the same verb, so D1
+has to resolve through the C1 tiebreak and land on FIXER. That is where the only
+real arithmetic in the instrument lives.
 
 Note that `npm run build` writes to the same `.next` the dev server is serving
 from, so running it while `dev` is up overwrites those chunks and produces exactly
