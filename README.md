@@ -305,9 +305,15 @@ quietly. Being able to offer the switch unprompted turns it into a reason to
 trust us. A test covers it, because it is a promise made out loud in a pitch.
 
 Covers in `public/book/` are cropped from the supplied spread by luminance
-profiling; the front lands at 601x903, the 6x9 trim a print book uses. QR codes
-are generated server-side from `NEXT_PUBLIC_BOOK_URL` as inline SVG rather than
-shipped as an image, so they cannot drift out of date and need no client script.
+profiling; the front lands at 601x903, the 6x9 trim a print book uses.
+
+The listing is `https://www.amazon.com/dp/B0H3STH3XP` (ISBN 9798258761231),
+built in as the default so nothing has to be configured. That is the canonical
+product URL rather than the `a.co` share link on the promotional artwork, which
+carries `social_share` and `ref` parameters minted for one particular share and
+costs an extra redirect. QR codes are generated server-side as inline SVG from
+whatever `bookUrl()` returns, so they cannot drift out of date, need no client
+script, and print correctly onto handouts.
 
 ## Genius Mining
 
@@ -386,7 +392,7 @@ optional and documented there. The short version:
 | `CQ_LOCAL_AGE_PATH`, `CQ_LOCAL_REPORTS_PATH` | Age records and corrections fall back to JSON files under the temp directory |
 | `GM_ALLOW_MOCK_IN_PRODUCTION` | Production refuses to run an analysis with no key. Set to `true` only for a staging deploy where fake profiles are understood |
 | `NEXT_PUBLIC_SITE_URL` | Social card and canonical URLs fall back to the Vercel host |
-| `NEXT_PUBLIC_BOOK_URL` | `/method` runs as pure provenance with nothing to click |
+| `NEXT_PUBLIC_BOOK_URL` | The canonical Amazon listing is used; set this only to point somewhere else |
 | `CQ_BOOK_COMMERCE` | Purchase links are shown. Set to `false` for an institutional deployment |
 
 ## Supabase setup

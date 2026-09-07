@@ -18,6 +18,8 @@ export const BOOK = {
   author: 'Adam Bond Devereau',
   publisher: 'Hidden Genius Labs LLC',
   year: 2026,
+  isbn: '9798258761231',
+  asin: 'B0H3STH3XP',
   coverFront: '/book/front.webp',
   coverBack: '/book/back.webp',
   /** The instrument implements this one. */
@@ -94,9 +96,19 @@ function str(name: string): string | undefined {
   return value ? value : undefined;
 }
 
-/** Where to buy. Unset means the page runs as provenance with nothing to click. */
+/**
+ * Where to buy.
+ *
+ * The canonical product URL rather than the `a.co` share link the QR on the
+ * promotional artwork encodes. That short link carries `social_share` and `ref`
+ * parameters minted for one particular share, and it costs an extra redirect.
+ * This form is stable, shows the ASIN in the open, and encodes into a sparser
+ * QR that scans more easily off a screen.
+ */
+export const AMAZON_URL = `https://www.amazon.com/dp/${BOOK.asin}`;
+
 export function bookUrl(): string | undefined {
-  return str('NEXT_PUBLIC_BOOK_URL');
+  return str('NEXT_PUBLIC_BOOK_URL') ?? AMAZON_URL;
 }
 
 /**

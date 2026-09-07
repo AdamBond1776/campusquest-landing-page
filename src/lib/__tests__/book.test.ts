@@ -17,16 +17,20 @@ afterEach(() => {
 });
 
 describe('the commerce switch', () => {
-  it('sells nothing until a URL is configured', async () => {
-    const { commerceEnabled, bookUrl } = await book();
-    expect(bookUrl()).toBeUndefined();
-    expect(commerceEnabled()).toBe(false);
+  it('falls back to the canonical Amazon listing with nothing configured', async () => {
+    const { commerceEnabled, bookUrl, AMAZON_URL, BOOK } = await book();
+    expect(bookUrl()).toBe(AMAZON_URL);
+    expect(AMAZON_URL).toContain(BOOK.asin);
+    // The a.co share link carries one-off tracking parameters and an extra hop.
+    expect(bookUrl()).not.toContain('a.co');
+    expect(bookUrl()).not.toContain('social_share');
+    expect(commerceEnabled()).toBe(true);
   });
 
-  it('sells once a URL is set', async () => {
-    process.env.NEXT_PUBLIC_BOOK_URL = 'https://example.com/book';
-    const { commerceEnabled } = await book();
-    expect(commerceEnabled()).toBe(true);
+  it('lets the listing be overridden without a code change', async () => {
+    process.env.NEXT_PUBLIC_BOOK_URL = 'https://example.com/elsewhere';
+    const { bookUrl } = await book();
+    expect(bookUrl()).toBe('https://example.com/elsewhere');
   });
 
   it('can be switched off for an institution even with a URL set', async () => {
