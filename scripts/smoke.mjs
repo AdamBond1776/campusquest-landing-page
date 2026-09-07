@@ -112,6 +112,30 @@ try {
     (await page.evaluate('!!document.querySelector("input[type=email]")')) === true
   );
 
+  // --- The plan cards must not stay in three columns on a phone -------------
+  // Three columns leaves about 120px a card at 390px, which cannot hold a price,
+  // a tagline and a badge. They stack below `sm`.
+  const planCards = 'button.relative.rounded-xl';
+
+  await page.setViewport(390, 844);
+  await sleep(600);
+  const mobile = await page.boxes(planCards);
+  check(
+    'plan cards stack on a phone',
+    mobile.length === 3 && mobile.every((c) => c.width > 300) && new Set(mobile.map((c) => c.top)).size === 3,
+    mobile.map((c) => c.width).join(', ')
+  );
+  check('no horizontal overflow on a phone', (await page.overflowsHorizontally()) === false);
+
+  await page.setViewport(1440, 900);
+  await sleep(600);
+  const desktop = await page.boxes(planCards);
+  check(
+    'plan cards stay in a row on a desktop',
+    desktop.length === 3 && new Set(desktop.map((c) => c.top)).size === 1,
+    desktop.map((c) => c.width).join(', ')
+  );
+
   check('no console errors', page.consoleErrors.length === 0, page.consoleErrors.join(' | '));
 
   ok = summary();

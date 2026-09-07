@@ -122,6 +122,18 @@ export async function launch({ base, port = 9222, width, height }) {
   await send('Runtime.enable');
   await send('Log.enable');
 
+  // `--window-size` does not reliably give the layout viewport a headless run
+  // reports, and a responsive check measured at the wrong width is worse than no
+  // check. Emulation pins it exactly.
+  if (width && height) {
+    await send('Emulation.setDeviceMetricsOverride', {
+      width,
+      height,
+      deviceScaleFactor: 1,
+      mobile: width < 768,
+    });
+  }
+
   const evaluate = async (expression) => {
     const res = await send('Runtime.evaluate', {
       expression,
@@ -142,6 +154,26 @@ export async function launch({ base, port = 9222, width, height }) {
 
     text: () => evaluate('document.body.innerText'),
     here: () => evaluate('location.pathname + location.search'),
+
+    setViewport: (w, h) =>
+      send('Emulation.setDeviceMetricsOverride', {
+        width: w,
+        height: h,
+        deviceScaleFactor: 1,
+        mobile: w < 768,
+      }),
+
+    /** Bounding boxes for elements matching `selector`, for layout assertions. */
+    boxes: (selector) =>
+      evaluate(`
+        [...document.querySelectorAll(${JSON.stringify(selector)})].map((el) => {
+          const r = el.getBoundingClientRect();
+          return { width: Math.round(r.width), top: Math.round(r.top) };
+        })
+      `),
+
+    overflowsHorizontally: () =>
+      evaluate('document.documentElement.scrollWidth > window.innerWidth + 1'),
 
     /**
      * Case-insensitive on purpose. `innerText` reports text as rendered, so a

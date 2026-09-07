@@ -521,36 +521,53 @@ function AccountStep({
           : 'Start free. Upgrade anytime.'}
       </p>
 
-      {/* Plan selection (students only) */}
+      {/* Plan selection (students only).
+          Three columns leaves about 120px a card on a phone, which is not enough
+          for a price, a tagline and a badge. Below `sm` each plan is a full-width
+          row instead: name and tagline on the left, price on the right. */}
       {!isOrg && (
-        <div className="mt-7 grid grid-cols-3 gap-3">
+        <div className="mt-7 grid grid-cols-1 gap-3 sm:grid-cols-3">
           {planOptions.map((p) => {
             const selected = plan === p.id;
             return (
               <button
                 key={p.id}
                 onClick={() => onPlanSelect(p.id)}
-                className={`relative p-4 rounded-xl border text-center transition-all duration-200 ${
+                className={`relative rounded-xl border p-4 text-left transition-all duration-200 sm:text-center ${
                   selected
                     ? 'bg-brand-600 border-brand-500 shadow-soft'
                     : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20'
                 }`}
               >
                 {p.badge && (
-                  <span className="absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-gold-500 text-brand-950 text-[9px] font-bold uppercase tracking-wide whitespace-nowrap">
+                  <span className="absolute -top-2 left-4 px-2 py-0.5 rounded-full bg-gold-500 text-brand-950 text-[9px] font-bold uppercase tracking-wide whitespace-nowrap sm:left-1/2 sm:-translate-x-1/2">
                     {p.badge}
                   </span>
                 )}
-                <p className={`text-sm font-bold ${selected ? 'text-white' : 'text-white/80'}`}>
-                  {p.name}
-                </p>
-                <p className={`text-xl font-extrabold mt-1 ${selected ? 'text-white' : 'text-white/80'}`}>
-                  {p.price}
-                  <span className="text-xs font-normal">{p.period}</span>
-                </p>
-                <p className="text-[10px] text-white/40 mt-1.5 leading-snug">
-                  {p.tagline}
-                </p>
+
+                <div className="flex items-center gap-3 sm:block">
+                  <div className="min-w-0 flex-1 sm:flex-none">
+                    <p className={`text-sm font-bold ${selected ? 'text-white' : 'text-white/80'}`}>
+                      {p.name}
+                    </p>
+                    <p className="mt-0.5 text-xs leading-snug text-white/40 sm:hidden">
+                      {p.tagline}
+                    </p>
+                  </div>
+
+                  <p
+                    className={`shrink-0 text-xl font-extrabold sm:mt-1 ${
+                      selected ? 'text-white' : 'text-white/80'
+                    }`}
+                  >
+                    {p.price}
+                    <span className="text-xs font-normal">{p.period}</span>
+                  </p>
+
+                  <p className="mt-1.5 hidden text-[10px] leading-snug text-white/40 sm:block">
+                    {p.tagline}
+                  </p>
+                </div>
               </button>
             );
           })}
