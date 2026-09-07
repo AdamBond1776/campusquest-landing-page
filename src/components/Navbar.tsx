@@ -14,11 +14,13 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  // Absolute hrefs on the section anchors so the nav still works from a route
+  // that is not the landing page.
   const links = [
-    { label: 'For Students', href: '#students' },
-    { label: 'For Organizations', href: '#organizations' },
-    { label: 'How It Works', href: '#how-it-works' },
-    { label: 'Pricing', href: '#pricing' },
+    { label: 'Find activities', href: '/activities' },
+    { label: 'For Students', href: '/#students' },
+    { label: 'How It Works', href: '/#how-it-works' },
+    { label: 'Pricing', href: '/#pricing' },
     { label: 'For Schools', href: '/institutions' },
   ];
 
@@ -45,13 +47,13 @@ export default function Navbar() {
           {/* Desktop nav */}
           <div className="hidden lg:flex items-center gap-8">
             {links.map((l) => (
-              <a
+              <Link
                 key={l.href}
                 href={l.href}
                 className="text-sm font-medium text-ink/70 hover:text-brand-600 transition-colors"
               >
                 {l.label}
-              </a>
+              </Link>
             ))}
           </div>
 
@@ -84,14 +86,14 @@ export default function Navbar() {
           <div className="lg:hidden pb-6 animate-fade-in">
             <div className="flex flex-col gap-1 pt-2">
               {links.map((l) => (
-                <a
+                <Link
                   key={l.href}
                   href={l.href}
                   onClick={() => setOpen(false)}
                   className="px-4 py-3 rounded-lg text-base font-medium text-ink/80 hover:bg-cream-100 hover:text-brand-600 transition-colors"
                 >
                   {l.label}
-                </a>
+                </Link>
               ))}
               <div className="flex flex-col gap-3 mt-4 px-2">
                 <Link

@@ -52,13 +52,17 @@ variable switches on.
 | `/welcome` | Post-signup and post-login confirmation |
 | `/auth/callback` | Exchanges the emailed code for a session |
 | `/auth/auth-code-error` | Expired or rejected link |
+| `/activities` | The activity directory: clubs, campus events, and athletics fixtures |
 | `/institutions` | Level Up Rhode Island: the public institutional page and the demand button |
+| `/privacy` | Privacy and data use notice |
+| `/terms` | Terms of use |
 | `/genius-mining` | Consent screen and what the instrument is |
 | `/genius-mining/questionnaire` | The instrument itself, sections A through E |
 | `/genius-mining/profile` | Run the analysis, then the student-facing profile |
 | `/genius-mining/profile/advisor` | Advisor printout, built for print and PDF |
 | `/admin/genius-mining` | Pathway coverage, instrument health, retention summary |
 | `/api/cron/retention` | Daily retention job. Requires `CRON_SECRET` as a bearer token |
+| `/api/cron/activities` | Refreshes the directory from every configured feed. Honours `CRON_SECRET` when set |
 | `/api/billing/subscription-event` | Stripe webhook |
 
 ## Authentication
@@ -79,6 +83,90 @@ Without Supabase credentials, all of it falls back to a `localStorage` mock that
 simulates latency and reports whether an address was already on file. The mock is
 never silent about being a mock: the check-your-inbox panel says so and offers a
 "Continue without the link" shortcut that lands where the real callback would.
+
+## The activity directory
+
+The directory at `/activities` is the product students actually open. It holds
+clubs, campus events, and athletics fixtures in one table (`cq_activities`)
+rather than one per source, so the browse view and the Genius Mining pathway
+data cannot drift apart.
+
+### Sources
+
+Nothing here scrapes HTML. Every campus already publishes this data in a
+machine-readable form, and a published feed does not break when someone
+restyles a page.
+
+| Source | What it gives us | Standing |
+| --- | --- | --- |
+| Athletics (`gorhody.com`) | Every fixture for every sport, home and away | Sidearm Sports iCal, published to be subscribed to |
+| Localist (`events.uri.edu`) | The university events calendar | Documented public read-only JSON API, allowed by `robots.txt` |
+| Engage (`uri.campuslabs.com`) | The student organization directory | The Engage app's own backing search index — see the caveat below |
+
+A live sync for URI returns 163 clubs, roughly 280 events, and 211 fixtures.
+
+**The Engage caveat.** Unlike the other two, that endpoint is not a published,
+supported product API. It is public and unauthenticated, but it can change shape
+without notice and nobody owes us warning. The fix is an institution-issued
+Engage API key, which a campus administrator can generate. It is isolated in
+`src/lib/activities/sources/engage.ts` so swapping in a sanctioned key touches
+one file.
+
+### Freshness, which is the part that matters
+
+A directory that sends a first-year to a club that folded last spring does not
+get a second chance, so staleness is handled structurally rather than by
+remembering to check:
+
+- Ingested rows are `listed`. Only a person can mark a row `verified`, and only
+  `verified` rows are eligible to become Genius Mining recommendations.
+- A row that stops appearing in its source decays to `stale` on its own after a
+  grace window long enough to survive a feed hiccup.
+- A re-sync refreshes source fields but can never overwrite a verification, an
+  operator's `hidden` flag, or a human's working-word tags. `reconcile` in
+  `src/lib/activities/ingest.ts` is a pure function so those rules are testable.
+- Every card shows its source and links back to it, because our copy can be
+  wrong and a student deciding whether to cross campus should be able to check.
+
+Rows the adapter distrusts are held at `pending` and never render publicly. URI's
+directory, for instance, contains organizations its own student senate has
+flagged for re-recognition.
+
+### Home games
+
+Filling seats is the athletics department's actual ask, so home fixtures get
+their own rail above the directory. Detecting them needs both halves: the
+summary saying `vs` **and** the venue matching. Twelve URI fixtures say `vs` but
+are played in New Haven, Davidson, and Hampton, and pointing students at a home
+game in North Carolina would cost the feature its credibility. 61 of 211
+fixtures are genuinely at Kingston.
+
+Run a sync with `curl -X POST localhost:43917/api/cron/activities?campus=uri`,
+or on a schedule against the deployed route.
+
+## Legal and consent
+
+`/privacy` and `/terms` are generated from `src/lib/legal.ts`, which is also
+where the consent model lives. Consent is three separately granted layers rather
+than one signup checkbox:
+
+1. **Running the service** — granted by making an account.
+2. **Improving the instrument** — its own checkbox on the Genius Mining consent
+   screen. Covers the de-identified structured corpus, which drops free text
+   entirely while the cohort is small.
+3. **Research** — written but inactive. If it is ever offered it needs an
+   institutional review board, its own consent form, and it only covers data
+   collected after approval.
+
+The layering is deliberate. Running a product and running human-subjects
+research are different activities under different rules, and bundling them is
+how a pilot ends up in front of a review board it never applied to. Turning on
+the third layer is a switch to flip, not a document to renegotiate.
+
+**These documents have not been reviewed by an attorney and the operating entity
+is not named yet.** Until `CQ_LEGAL_ENTITY` and `CQ_LEGAL_ADDRESS` are set, both
+pages render a visible provisional banner rather than quietly omitting the
+controller.
 
 ## Genius Mining
 
@@ -149,6 +237,10 @@ optional and documented there. The short version:
 | `GM_ALERT_EMAIL` | Alerts go to the `gm-alerts` group by default |
 | `GM_ADMIN_EMAILS` | `/admin/genius-mining` returns 404 in production |
 | `CQ_PARTNERSHIP_EMAIL` | `/institutions` shows the `partners@campusquestapp.com` placeholder |
+| `CQ_LEGAL_ENTITY`, `CQ_LEGAL_ADDRESS` | `/privacy` and `/terms` render a provisional banner and name no controller |
+| `CQ_PRIVACY_EMAIL` | Data requests fall back to `CQ_PARTNERSHIP_EMAIL` |
+| `NEXT_PUBLIC_SOCIAL_INSTAGRAM`, `_TWITTER`, `_LINKEDIN` | The footer renders no social icons rather than dead links |
+| `CQ_LOCAL_ACTIVITIES_PATH` | The directory falls back to a JSON file under the temp directory |
 | `NEXT_PUBLIC_SITE_URL` | Social card and canonical URLs fall back to the Vercel host |
 
 ## Supabase setup
@@ -161,6 +253,8 @@ Two pieces are not code and have to be done in the Supabase dashboard.
      and the row-level security policies.
    - [`0002_entitlement.sql`](supabase/migrations/0002_entitlement.sql) —
      institutional seats and admin grants, which the deletion clock reads.
+   - [`0004_activities.sql`](supabase/migrations/0004_activities.sql) —
+     the activity directory, with public read limited to listed and verified rows.
    - [`0003_campus_demand.sql`](supabase/migrations/0003_campus_demand.sql) —
      students asking their school to cover Genius Mining.
 2. **Point auth at Resend and allow the callback.** Enable the email provider, set
