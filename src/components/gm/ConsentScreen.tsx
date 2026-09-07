@@ -2,10 +2,12 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { ArrowRight, Loader2 } from 'lucide-react';
 import { CLOSING_BLOCK } from '@hiddengeniuslabs/genius-mining';
 import { acceptConsent } from '@/app/genius-mining/actions';
 import FormAlert from '@/components/FormAlert';
+import { BOOK } from '@/lib/book';
 
 /**
  * The consent screen, shown before the questionnaire starts.
@@ -68,6 +70,23 @@ export default function ConsentScreen() {
             </li>
           ))}
         </ul>
+
+        {/* Provenance only. No cover, no price, no button.
+            Reading the source before answering would tell us nothing about the
+            student and a great deal about the book, so this is a plain link out
+            and it stays that way. */}
+        <p className="mt-5 border-t border-cream-200 pt-5 text-sm text-brand-600">
+          This questionnaire implements Tool {BOOK.tool.number} of{' '}
+          <em>
+            {BOOK.title}: {BOOK.edition}
+          </em>{' '}
+          by {BOOK.author}.{' '}
+          <Link href="/method" className="font-semibold text-brand-700 underline underline-offset-2 hover:text-brand-900">
+            Where this comes from
+          </Link>{' '}
+          sets out the method in full. You do not need to read anything first — in fact it is
+          better if you don&rsquo;t.
+        </p>
       </div>
 
       {error && <FormAlert message={error} />}

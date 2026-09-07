@@ -13,6 +13,7 @@ const productLinks = [
   { href: '/#how-it-works', label: 'How It Works' },
   { href: '/#pricing', label: 'Pricing' },
   { href: '/institutions', label: 'For Schools' },
+  { href: '/method', label: 'Where Genius Mining comes from' },
 ];
 
 const companyLinks = [

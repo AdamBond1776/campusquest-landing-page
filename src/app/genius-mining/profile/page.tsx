@@ -11,6 +11,7 @@ import AcceptProfile from '@/components/gm/AcceptProfile';
 import GmHeader from '@/components/gm/GmHeader';
 import RunAnalysis from '@/components/gm/RunAnalysis';
 import StudentProfile from '@/components/gm/StudentProfile';
+import RulesStep from '@/components/book/RulesStep';
 import { isMockEngine } from '@/lib/env';
 import { loadCurrentRecord } from '@/lib/gm/load';
 
@@ -69,7 +70,11 @@ export default async function ProfilePage() {
           <div className="mt-8">
             <AcceptProfile />
           </div>
-        ) : null}
+        ) : (
+          // Only once the profile is theirs. Before that the page is asking them
+          // to judge a result, and a purchase prompt alongside that reads badly.
+          <RulesStep workingWord={workingWord} />
+        )}
       </main>
     </div>
   );
