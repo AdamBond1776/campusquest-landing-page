@@ -137,7 +137,13 @@ export default function WelcomeView({
             </ol>
           </div>
 
-          <div className="mt-7 flex justify-center">
+          {/* A student who has just signed up should land somewhere with
+              something in it. Sending them back to the marketing page is a
+              dead end at the exact moment they are most willing to look. */}
+          <div className="mt-7 flex flex-col sm:flex-row justify-center gap-3">
+            <Link href="/activities" className="btn-gold">
+              See what is happening this week
+            </Link>
             <Link href="/" className="btn-ghost-light">
               Back to CampusQuest
             </Link>

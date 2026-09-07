@@ -4,6 +4,11 @@
     {
       "path": "/api/cron/retention",
       "schedule": "0 9 * * *"
+    },
+    {
+      "comment": "Refresh the activity directory before students are awake. Feeds change daily and a stale event is the failure that loses a first-year for good.",
+      "path": "/api/cron/activities",
+      "schedule": "0 6 * * *"
     }
   ]
 }
