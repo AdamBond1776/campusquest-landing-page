@@ -49,7 +49,9 @@ type LocalData = {
 class LocalStore implements Store {
   readonly kind = 'local' as const;
 
-  private readonly file = join(tmpdir(), 'campusquest-genius-mining', 'records.json');
+  private readonly file =
+    process.env.GM_LOCAL_STORE_PATH?.trim() ||
+    join(tmpdir(), 'campusquest-genius-mining', 'records.json');
 
   private async read(): Promise<LocalData> {
     try {
@@ -220,6 +222,11 @@ class SupabaseStore implements Store {
  * ------------------------------------------------------------------ */
 
 let cached: Store | null = null;
+
+/** Drops the memoized store. Tests use this after repointing the local store. */
+export function resetStoreForTesting(): void {
+  cached = null;
+}
 
 /**
  * Supabase when it is configured, the local file store otherwise.
