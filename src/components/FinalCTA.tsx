@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { ArrowRight, Compass } from 'lucide-react';
+import { PLANS, formatPrice } from '@/lib/pricing';
 
 export default function FinalCTA() {
   return (
@@ -22,8 +23,9 @@ export default function FinalCTA() {
             </h2>
 
             <p className="mt-5 text-lg text-white/70 max-w-xl mx-auto">
-              Join the pilot at URI. Browse free, upgrade from $3/month, and
-              change how you experience college.
+              Join the Rhode Island pilot. Browse free, upgrade from{' '}
+              {formatPrice(PLANS.basic.price)}/month, and change how you
+              experience college.
             </p>
 
             <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">

@@ -1,96 +1,26 @@
 import Link from 'next/link';
+import { Check, Sparkles, User, Star, Building2, ArrowRight, Lock } from 'lucide-react';
 import {
-  Check,
-  Sparkles,
-  User,
-  Star,
-  Building2,
-  ArrowRight,
-} from 'lucide-react';
+  INSTITUTIONAL_SEAT_PRICE,
+  INTRO_NOTICE_COPY,
+  PLANS,
+  PRICE_LOCK_COPY,
+  STUDENT_PLANS,
+  formatPrice,
+  isDiscounted,
+  type PlanId,
+} from '@/lib/pricing';
 
-type Tier = {
-  name: string;
-  icon: typeof Sparkles;
-  price: string;
-  period?: string;
-  tagline: string;
-  features: string[];
-  cta: string;
-  highlight?: boolean;
-  badge?: string;
-  dark?: boolean;
+const icons: Record<PlanId, typeof Sparkles> = {
+  free: User,
+  basic: Sparkles,
+  premium: Star,
+  club: Building2,
 };
 
-const tiers: Tier[] = [
-  {
-    name: 'Free',
-    icon: User,
-    price: '$0',
-    tagline: 'Browse and discover events, clubs, and activities on campus.',
-    features: [
-      'Browse all campus events',
-      'View club pages and profiles',
-      'Search by category or location',
-      'See what\'s happening this week',
-    ],
-    cta: 'Start browsing',
-  },
-  {
-    name: 'Basic',
-    icon: Sparkles,
-    price: '$3',
-    period: '/month',
-    tagline: 'Keep a profile, save events, and filter by what you love.',
-    features: [
-      'Everything in Free, plus:',
-      'Personal user profile',
-      'Save events for later',
-      'Filter by your interests',
-      'Follow clubs you love',
-      'No ads, ever',
-    ],
-    cta: 'Go Basic',
-  },
-  {
-    name: 'Premium',
-    icon: Star,
-    price: '$5',
-    period: '/month',
-    tagline: 'Smart notifications, personalized feeds, and bring your friends.',
-    features: [
-      'Everything in Basic, plus:',
-      'Smart weekly notifications',
-      'Personalized weekly feed',
-      'Your week at a glance',
-      'Mass invite friends via text or email',
-      'Priority event recommendations',
-    ],
-    cta: 'Go Premium',
-    highlight: true,
-    badge: 'Most popular',
-  },
-  {
-    name: 'Club & Business',
-    icon: Building2,
-    price: '$49',
-    period: '/month',
-    tagline: 'A full club page with event management, ticketing, templates, and more.',
-    features: [
-      'Custom club page with your URL',
-      'Log events for a week, month, or full semester',
-      'Membership application templates',
-      'Club rules & info display sections',
-      'Video & photo scrapbook gallery',
-      'Sell or offer tickets with reminders',
-      'Attendee feedback collection',
-      'Analytics on views and engagement',
-    ],
-    cta: 'Claim your club page',
-    dark: true,
-  },
-];
-
 export default function Pricing() {
+  const club = PLANS.club;
+
   return (
     <section id="pricing" className="py-20 lg:py-28 bg-white">
       <div className="max-w-content mx-auto px-5 sm:px-8">
@@ -100,89 +30,135 @@ export default function Pricing() {
             Start free. Upgrade when you want more.
           </h2>
           <p className="mt-5 text-lg text-ink/60 leading-relaxed">
-            Browse for free. Keep a profile for the price of a coffee. Go premium
-            for less than a sandwich. Clubs get a full toolkit for $49/month.
+            Browse for free. Keep a profile for the price of a coffee. Premium adds
+            Genius Mining, the guided session that names how you actually think.
+            Clubs get a full toolkit for {formatPrice(club.price)}/month.
           </p>
         </div>
 
         {/* Student tiers */}
         <div className="mt-14 grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-          {tiers.slice(0, 3).map((t) => (
-            <div
-              key={t.name}
-              className={`relative p-7 rounded-2xl transition-all duration-200 hover:-translate-y-1 ${
-                t.highlight
-                  ? 'bg-brand-950 text-white border border-brand-800 shadow-lift'
-                  : 'bg-cream-50 border border-cream-200 shadow-soft'
-              }`}
-            >
-              {t.badge && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-gold-500 text-brand-950 text-xs font-bold uppercase tracking-wide whitespace-nowrap">
-                  {t.badge}
-                </div>
-              )}
+          {STUDENT_PLANS.map((plan) => {
+            const Icon = icons[plan.id];
+            const highlight = plan.id === 'premium';
+            const discounted = isDiscounted(plan);
 
+            return (
               <div
-                className={`flex items-center justify-center w-11 h-11 rounded-xl mb-5 ${
-                  t.highlight
-                    ? 'bg-gold-500 text-brand-950'
-                    : 'bg-brand-600 text-white'
+                key={plan.id}
+                className={`relative p-7 rounded-2xl transition-all duration-200 hover:-translate-y-1 ${
+                  highlight
+                    ? 'bg-brand-950 text-white border border-brand-800 shadow-lift'
+                    : 'bg-cream-50 border border-cream-200 shadow-soft'
                 }`}
               >
-                <t.icon className="w-5 h-5" />
-              </div>
-
-              <h3 className={`text-lg font-bold ${t.highlight ? 'text-white' : 'text-ink'}`}>
-                {t.name}
-              </h3>
-              <div className="mt-2 mb-1">
-                <span className={`text-4xl font-extrabold ${t.highlight ? 'text-white' : 'text-ink'}`}>
-                  {t.price}
-                </span>
-                {t.period && (
-                  <span className={`text-sm ml-1 ${t.highlight ? 'text-white/50' : 'text-ink/50'}`}>
-                    {t.period}
-                  </span>
+                {highlight && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-gold-500 text-brand-950 text-xs font-bold uppercase tracking-wide whitespace-nowrap">
+                    Includes Genius Mining
+                  </div>
                 )}
-              </div>
-              <p className={`text-sm mb-5 ${t.highlight ? 'text-white/60' : 'text-ink/60'}`}>
-                {t.tagline}
-              </p>
 
-              <ul className="space-y-2.5 mb-6">
-                {t.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2.5">
-                    <Check
-                      className={`w-4 h-4 shrink-0 mt-0.5 ${
-                        t.highlight ? 'text-gold-400' : 'text-brand-600'
-                      }`}
-                    />
+                <div
+                  className={`flex items-center justify-center w-11 h-11 rounded-xl mb-5 ${
+                    highlight ? 'bg-gold-500 text-brand-950' : 'bg-brand-600 text-white'
+                  }`}
+                >
+                  <Icon className="w-5 h-5" />
+                </div>
+
+                <h3 className={`text-lg font-bold ${highlight ? 'text-white' : 'text-ink'}`}>
+                  {plan.name}
+                </h3>
+
+                <div className="mt-2 mb-1 flex items-baseline gap-2 flex-wrap">
+                  <span
+                    className={`text-4xl font-extrabold ${highlight ? 'text-white' : 'text-ink'}`}
+                  >
+                    {formatPrice(plan.price)}
+                  </span>
+                  {plan.price > 0 && (
+                    <span className={`text-sm ${highlight ? 'text-white/50' : 'text-ink/50'}`}>
+                      /month
+                    </span>
+                  )}
+                  {discounted && (
                     <span
-                      className={`text-sm ${
-                        f.endsWith(':')
-                          ? 'font-bold ' + (t.highlight ? 'text-white' : 'text-ink')
-                          : t.highlight ? 'text-white/70' : 'text-ink/70'
+                      className={`text-sm line-through ${
+                        highlight ? 'text-white/35' : 'text-ink/35'
                       }`}
                     >
-                      {f}
+                      {formatPrice(plan.standardPrice)}
                     </span>
-                  </li>
-                ))}
-              </ul>
+                  )}
+                </div>
 
-              <Link
-                href="/signup"
-                className={`w-full ${
-                  t.highlight
-                    ? 'btn-gold'
-                    : 'btn-primary'
-                }`}
-              >
-                {t.cta}
-                <ArrowRight className="w-4 h-4" />
-              </Link>
+                {discounted && (
+                  <p
+                    className={`mb-3 inline-flex items-center gap-1.5 text-xs font-semibold ${
+                      highlight ? 'text-gold-400' : 'text-brand-700'
+                    }`}
+                  >
+                    <Lock className="w-3.5 h-3.5" />
+                    Price locked while you stay subscribed
+                  </p>
+                )}
+
+                <p className={`text-sm mb-5 ${highlight ? 'text-white/60' : 'text-ink/60'}`}>
+                  {plan.tagline}
+                </p>
+
+                <ul className="space-y-2.5 mb-6">
+                  {plan.features.map((feature) => (
+                    <li key={feature} className="flex items-start gap-2.5">
+                      <Check
+                        className={`w-4 h-4 shrink-0 mt-0.5 ${
+                          highlight ? 'text-gold-400' : 'text-brand-600'
+                        }`}
+                      />
+                      <span
+                        className={`text-sm ${
+                          feature.endsWith(':')
+                            ? 'font-bold ' + (highlight ? 'text-white' : 'text-ink')
+                            : highlight
+                              ? 'text-white/70'
+                              : 'text-ink/70'
+                        }`}
+                      >
+                        {feature}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+
+                <Link href="/signup" className={`w-full ${highlight ? 'btn-gold' : 'btn-primary'}`}>
+                  {plan.cta}
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="mt-6 max-w-4xl mx-auto rounded-2xl border border-cream-200 bg-cream-50 p-5 sm:p-6">
+          <div className="flex items-start gap-3">
+            <Lock className="mt-0.5 h-5 w-5 shrink-0 text-brand-600" />
+            <div>
+              <p className="text-sm font-bold text-ink">{PRICE_LOCK_COPY}</p>
+              <p className="mt-1.5 text-sm leading-relaxed text-ink/55">{INTRO_NOTICE_COPY}</p>
+              <p className="mt-2.5 text-sm leading-relaxed text-ink/55">
+                If your school signs up for Level Up Rhode Island, Genius Mining
+                becomes free for you and we cancel your subscription and refund
+                the unused days.{' '}
+                <Link
+                  href="/institutions"
+                  className="font-semibold text-brand-700 underline underline-offset-2 hover:text-brand-800"
+                >
+                  Ask your school to cover it
+                </Link>
+                .
+              </p>
             </div>
-          ))}
+          </div>
         </div>
 
         {/* Club tier — full width */}
@@ -197,31 +173,33 @@ export default function Pricing() {
                     <Building2 className="w-6 h-6" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold text-white">{tiers[3].name}</h3>
-                    <p className="text-xs text-white/50 font-medium">For clubs & local businesses</p>
+                    <h3 className="text-xl font-bold text-white">{club.name}</h3>
+                    <p className="text-xs text-white/50 font-medium">
+                      For clubs &amp; local businesses
+                    </p>
                   </div>
                 </div>
 
                 <div className="mb-4">
-                  <span className="text-5xl font-extrabold text-white">$49</span>
+                  <span className="text-5xl font-extrabold text-white">
+                    {formatPrice(club.price)}
+                  </span>
                   <span className="text-sm text-white/50 ml-2">/month</span>
                 </div>
 
-                <p className="text-sm text-white/60 mb-6 max-w-md">
-                  {tiers[3].tagline}
-                </p>
+                <p className="text-sm text-white/60 mb-6 max-w-md">{club.tagline}</p>
 
                 <Link href="/signup" className="btn-gold">
-                  {tiers[3].cta}
+                  {club.cta}
                   <ArrowRight className="w-4 h-4" />
                 </Link>
               </div>
 
               <div className="grid sm:grid-cols-2 gap-x-6 gap-y-3">
-                {tiers[3].features.map((f) => (
-                  <div key={f} className="flex items-start gap-2.5">
+                {club.features.map((feature) => (
+                  <div key={feature} className="flex items-start gap-2.5">
                     <Check className="w-4 h-4 text-gold-400 shrink-0 mt-0.5" />
-                    <span className="text-sm text-white/70">{f}</span>
+                    <span className="text-sm text-white/70">{feature}</span>
                   </div>
                 ))}
               </div>
@@ -230,8 +208,12 @@ export default function Pricing() {
         </div>
 
         <p className="mt-10 text-center text-sm text-ink/40">
-          Pilot launching at the University of Rhode Island. More schools coming
-          soon.
+          Schools can cover Genius Mining for their students at{' '}
+          {formatPrice(INSTITUTIONAL_SEAT_PRICE)} a student.{' '}
+          <Link href="/institutions" className="font-semibold text-brand-700 hover:text-brand-800">
+            Level Up Rhode Island
+          </Link>{' '}
+          is selecting three founding partner institutions.
         </p>
       </div>
     </section>

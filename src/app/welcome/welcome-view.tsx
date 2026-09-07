@@ -4,12 +4,13 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Compass, Mail, Sparkles, CalendarCheck, ArrowLeft } from 'lucide-react';
 import { getCurrentUser, type CurrentUser, type Plan } from '@/lib/auth';
+import { PLANS, formatPrice } from '@/lib/pricing';
 
 const planLabels: Record<Plan, string> = {
-  free: 'Free',
-  basic: 'Basic — $3/mo',
-  premium: 'Premium — $5/mo',
-  club: 'Club & Business — $49/mo',
+  free: PLANS.free.name,
+  basic: `${PLANS.basic.name} — ${formatPrice(PLANS.basic.price)}/mo`,
+  premium: `${PLANS.premium.name} — ${formatPrice(PLANS.premium.price)}/mo`,
+  club: `${PLANS.club.name} — ${formatPrice(PLANS.club.price)}/mo`,
 };
 
 export default function WelcomeView({

@@ -30,6 +30,7 @@ import CheckInbox from '@/components/CheckInbox';
 import TextField from '@/components/TextField';
 import FormAlert from '@/components/FormAlert';
 import { completeOnboarding, signUpWithEmail, type Plan, type Role } from '@/lib/auth';
+import { PLANS, PRICE_LOCK_COPY, STUDENT_PLANS, formatPrice } from '@/lib/pricing';
 import { validateEmail } from '@/lib/validation';
 
 const interestOptions = [
@@ -47,39 +48,14 @@ const interestOptions = [
   { icon: Plane, label: 'Travel' },
 ];
 
-const planOptions: {
-  id: Plan;
-  name: string;
-  price: string;
-  period: string;
-  tagline: string;
-  highlight?: boolean;
-  badge?: string;
-}[] = [
-  {
-    id: 'free',
-    name: 'Free',
-    price: '$0',
-    period: '',
-    tagline: 'Browse events, clubs, and activities.',
-  },
-  {
-    id: 'basic',
-    name: 'Basic',
-    price: '$3',
-    period: '/mo',
-    tagline: 'Profile, save events, filter by interests.',
-  },
-  {
-    id: 'premium',
-    name: 'Premium',
-    price: '$5',
-    period: '/mo',
-    tagline: 'Smart notifications, weekly feed, invite friends.',
-    highlight: true,
-    badge: 'Most popular',
-  },
-];
+const planOptions = STUDENT_PLANS.map((plan) => ({
+  id: plan.id as Plan,
+  name: plan.name,
+  price: formatPrice(plan.price),
+  period: plan.price > 0 ? '/mo' : '',
+  tagline: plan.shortTagline,
+  badge: plan.id === 'premium' ? 'Genius Mining' : undefined,
+}));
 
 const TOTAL_STEPS = 4;
 
@@ -415,7 +391,10 @@ function RoleStep({
             <p className="text-sm text-white/70">
               Organization accounts include a full club page with event
               management, ticketing, templates, and analytics for{' '}
-              <span className="font-bold text-gold-400">$49/month</span>.
+              <span className="font-bold text-gold-400">
+                {formatPrice(PLANS.club.price)}/month
+              </span>
+              .
             </p>
           </div>
         </div>
@@ -517,7 +496,7 @@ function AccountStep({
       <h2 className="text-2xl font-extrabold text-center">{heading}</h2>
       <p className="mt-2 text-sm text-white/50 text-center">
         {isOrg
-          ? '$49/month — full club page with everything you need.'
+          ? `${formatPrice(PLANS.club.price)}/month — full club page with everything you need.`
           : 'Start free. Upgrade anytime.'}
       </p>
 
@@ -574,6 +553,8 @@ function AccountStep({
         </div>
       )}
 
+      {!isOrg && <p className="mt-3 text-center text-xs leading-relaxed text-white/40">{PRICE_LOCK_COPY}</p>}
+
       {/* Org plan summary */}
       {isOrg && (
         <div className="mt-6 p-4 rounded-xl bg-gold-500/10 border border-gold-500/20 flex items-center justify-between">
@@ -586,7 +567,10 @@ function AccountStep({
               <p className="text-xs text-white/50">Full club page toolkit</p>
             </div>
           </div>
-          <span className="text-lg font-extrabold text-gold-400">$49<span className="text-sm font-normal">/mo</span></span>
+          <span className="text-lg font-extrabold text-gold-400">
+            {formatPrice(PLANS.club.price)}
+            <span className="text-sm font-normal">/mo</span>
+          </span>
         </div>
       )}
 

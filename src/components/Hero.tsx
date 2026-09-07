@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { ArrowRight, Sparkles, MapPin, Calendar, Users, Trophy } from 'lucide-react';
+import { PLANS, formatPrice } from '@/lib/pricing';
 
 export default function Hero() {
   return (
@@ -57,7 +58,8 @@ export default function Hero() {
             </div>
 
             <p className="mt-5 text-sm text-white/50">
-              Browse free. Basic from $3/mo. Premium from $5/mo.
+              Browse free. Basic {formatPrice(PLANS.basic.price)}/mo. Premium{' '}
+              {formatPrice(PLANS.premium.price)}/mo with Genius Mining.
             </p>
           </div>
 

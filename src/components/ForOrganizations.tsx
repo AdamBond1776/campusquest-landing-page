@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { PLANS, formatPrice } from '@/lib/pricing';
 import {
   Globe,
   CalendarRange,
@@ -66,7 +67,7 @@ export default function ForOrganizations() {
             For Clubs & Local Businesses
           </span>
           <h2 className="mt-4 text-3xl sm:text-4xl lg:text-5xl font-extrabold text-balance">
-            Everything your club needs, for $49/month
+            Everything your club needs, for {formatPrice(PLANS.club.price)}/month
           </h2>
           <p className="mt-5 text-lg text-white/70 leading-relaxed">
             A full club page with event management, membership templates,
@@ -94,7 +95,7 @@ export default function ForOrganizations() {
 
         <div className="mt-12 flex flex-col sm:flex-row items-center gap-4 justify-center">
           <Link href="/signup" className="btn-gold">
-            Claim your club page — $49/month
+            Claim your club page — {formatPrice(PLANS.club.price)}/month
             <ArrowRight className="w-4 h-4" />
           </Link>
           <span className="text-sm text-white/50">
