@@ -73,10 +73,14 @@ export function bracketForBirthYear(birthYear: number, now: Date = new Date()): 
   return 'under_16';
 }
 
-export function guardianConsentActive(
-  consent: GuardianConsent | null,
-  now: Date = new Date()
-): boolean {
+/**
+ * Consent is live once given and not withdrawn.
+ *
+ * The token expiry deliberately does not apply here. It bounds how long a
+ * guardian has to respond to the request; once they have responded, the consent
+ * does not lapse on a timer.
+ */
+export function guardianConsentActive(consent: GuardianConsent | null): boolean {
   if (!consent?.consented_at) return false;
   if (consent.revoked_at) return false;
   return true;
@@ -105,11 +109,7 @@ export type AccessDecision = {
  * sell. A guardian can pay for a seat, and an institution covering a seat works
  * for any age.
  */
-export function allows(
-  record: AgeRecord | null,
-  capability: Capability,
-  now: Date = new Date()
-): AccessDecision {
+export function allows(record: AgeRecord | null, capability: Capability): AccessDecision {
   if (!record || record.bracket === 'unknown') {
     return { allowed: false, reason: 'Tell us your age first so we know what we can show you.' };
   }
@@ -124,7 +124,7 @@ export function allows(
   if (record.bracket === 'adult') return { allowed: true, reason: '' };
 
   // Everything below is a 16 or 17 year old.
-  const consented = guardianConsentActive(record.guardian, now);
+  const consented = guardianConsentActive(record.guardian);
 
   if (capability === 'genius_mining') {
     return {

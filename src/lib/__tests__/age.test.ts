@@ -61,36 +61,36 @@ describe('bracketForBirthYear', () => {
 describe('allows', () => {
   it('lets an adult do everything', () => {
     for (const capability of ['directory', 'contribute', 'genius_mining', 'billing'] as const) {
-      expect(allows(record(), capability, NOW).allowed).toBe(true);
+      expect(allows(record(), capability).allowed).toBe(true);
     }
   });
 
   it('refuses everything to an account that has not stated an age', () => {
-    expect(allows(null, 'directory', NOW).allowed).toBe(false);
-    expect(allows(record({ bracket: 'unknown' }), 'directory', NOW).allowed).toBe(false);
+    expect(allows(null, 'directory').allowed).toBe(false);
+    expect(allows(record({ bracket: 'unknown' }), 'directory').allowed).toBe(false);
   });
 
   it('refuses everything to an under-16', () => {
-    expect(allows(record({ bracket: 'under_16' }), 'directory', NOW).allowed).toBe(false);
+    expect(allows(record({ bracket: 'under_16' }), 'directory').allowed).toBe(false);
   });
 
   it('gives a consented minor the directory', () => {
     const minor = record({ bracket: 'minor', guardian: consent() });
 
-    expect(allows(minor, 'directory', NOW).allowed).toBe(true);
-    expect(allows(minor, 'contribute', NOW).allowed).toBe(true);
+    expect(allows(minor, 'directory').allowed).toBe(true);
+    expect(allows(minor, 'contribute').allowed).toBe(true);
   });
 
   it('holds a minor out of the directory until the guardian actually responds', () => {
     const pending = record({ bracket: 'minor', guardian: consent({ consented_at: null }) });
 
-    expect(allows(pending, 'directory', NOW).allowed).toBe(false);
-    expect(allows(pending, 'directory', NOW).reason).toMatch(/parent or guardian/i);
+    expect(allows(pending, 'directory').allowed).toBe(false);
+    expect(allows(pending, 'directory').reason).toMatch(/parent or guardian/i);
   });
 
   it('keeps the instrument closed to a minor even with guardian consent', () => {
     const minor = record({ bracket: 'minor', guardian: consent() });
-    const decision = allows(minor, 'genius_mining', NOW);
+    const decision = allows(minor, 'genius_mining');
 
     expect(decision.allowed).toBe(false);
     expect(decision.reason).toMatch(/18 and over/);
@@ -99,7 +99,7 @@ describe('allows', () => {
   it('will not sell a subscription to a minor even with guardian consent', () => {
     const minor = record({ bracket: 'minor', guardian: consent() });
 
-    expect(allows(minor, 'billing', NOW).allowed).toBe(false);
+    expect(allows(minor, 'billing').allowed).toBe(false);
   });
 
   it('closes access again when a guardian revokes', () => {
@@ -108,8 +108,8 @@ describe('allows', () => {
       guardian: consent({ revoked_at: '2026-09-05T00:00:00.000Z' }),
     });
 
-    expect(guardianConsentActive(revoked.guardian, NOW)).toBe(false);
-    expect(allows(revoked, 'directory', NOW).allowed).toBe(false);
+    expect(guardianConsentActive(revoked.guardian)).toBe(false);
+    expect(allows(revoked, 'directory').allowed).toBe(false);
   });
 });
 

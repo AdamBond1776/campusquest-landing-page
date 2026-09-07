@@ -5,6 +5,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ActivityCard from '@/components/activities/ActivityCard';
 import ActivityFilters from '@/components/activities/ActivityFilters';
+import ReportPanel from '@/components/activities/ReportPanel';
 import { getActivityStore } from '@/lib/activities/store';
 import { upcomingHomeGames } from '@/lib/activities/sources/athletics';
 import { PUBLIC_STATUSES, type Activity } from '@/lib/activities/types';
@@ -97,6 +98,14 @@ export default async function ActivitiesPage({ searchParams }: { searchParams: S
     });
 
   const shown = matches.slice(0, PAGE_SIZE);
+
+  // Clubs and facilities only. Reporting a single dated event as defunct is
+  // noise, and a select holding all 629 rows is unusable on a phone.
+  const reportOptions = current
+    .filter((row) => row.kind === 'organization' || row.kind === 'facility')
+    .map((row) => ({ id: row.id, name: row.name }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
   const homeGames = upcomingHomeGames(current, now).slice(0, 4);
   const filtering = Boolean(needle || category || homeOnly || (kind && kind !== 'all'));
   const empty = current.length === 0;
@@ -235,6 +244,10 @@ export default async function ActivitiesPage({ searchParams }: { searchParams: S
                   find what you are after.
                 </p>
               ) : null}
+
+              <div className="mt-12">
+                <ReportPanel campusId={campusId} options={reportOptions} />
+              </div>
             </>
           )}
         </div>

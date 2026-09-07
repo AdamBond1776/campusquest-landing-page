@@ -144,6 +144,80 @@ fixtures are genuinely at Kingston.
 Run a sync with `curl -X POST localhost:43917/api/cron/activities?campus=uri`,
 or on a schedule against the deployed route.
 
+### Student corrections
+
+Feeds know which clubs are registered. They never know which ones stopped
+meeting in March, and the students in the room are the only ones who do. So the
+directory has a correction form, and corrections are rewarded.
+
+Rewarding them is the part most likely to go wrong, because paying for reports
+is paying for volume and volume is the opposite of what a directory needs. Four
+rules in `src/lib/activities/reports.ts` buy accuracy instead:
+
+- Credit lands on a **confirmed** report, never on submission, so a fabricated
+  one costs time and earns nothing.
+- **Three** confirmations make a free month, not one. A month for ten seconds of
+  clicking prices the reward far above the work.
+- **Two free months per term** is the ceiling, so the incentive cannot scale
+  into a job.
+- **A report never changes a listing.** Everything queues for a person. One
+  student must not be able to delist a rival society, and a hundred students
+  saying the same thing can be one person with a hundred addresses.
+
+`still_active` is a first-class report kind for the same reason: confirming a
+club is alive is worth as much as reporting one dead, and it is much harder to
+fake, because it can be checked by turning up.
+
+## Ownership
+
+Two entities:
+
+```
+Hidden Genius Labs LLC          owns the Genius Mining method,
+  (IP holder)                   the instrument, and the code
+        │
+        │  licence
+        ▼
+CampusQuest, Inc.               operates the service, holds student
+  (Delaware C corporation)      accounts, merchant of record
+```
+
+Ownership sits in the holding company and economics sit in the operating
+company, which is what lets a partner take a stake in CampusQuest without
+acquiring any claim on the method. It is also why institutions are scoped as
+**evaluators, not co-developers** — co-development is what triggers an
+institutional IP claim.
+
+The one part of this a student needs to know is in the privacy notice: the IP
+holder owns the instrument, not the responses, and does not receive identified
+answers.
+
+## Age
+
+The gate is per capability rather than per site, in `src/lib/age.ts`. Browsing
+public campus events and writing several paragraphs about your own life that get
+sent to a language model are not the same act, and one checkbox at the door
+treats them as though they were.
+
+| | Directory | Corrections | Genius Mining | Own subscription |
+| --- | --- | --- | --- | --- |
+| 18+ | yes | yes | yes | yes |
+| 16–17, guardian consented | yes | yes | **no** | **no** |
+| 16–17, awaiting guardian | no | no | no | no |
+| Under 16 | no | no | no | no |
+
+Genius Mining stays adults-only regardless of guardian consent. That is where
+the sensitive material is, and a study involving minors needs parental
+permission plus the child's own assent and lands in a higher review category —
+work to be done deliberately rather than inherited by accident. Billing is
+adults-only because a minor generally cannot be held to a contract; a guardian
+can buy a seat, and institutional coverage works at any age.
+
+Guardian consent is an emailed link with a hashed, expiring token compared in
+constant time. The privacy notice states what that does **not** prove: someone
+at that address agreed, which is not the same as a family relationship. That
+limit is exactly why the minor pathway stops at the directory.
+
 ## Legal and consent
 
 `/privacy` and `/terms` are generated from `src/lib/legal.ts`, which is also
@@ -237,7 +311,8 @@ optional and documented there. The short version:
 | `GM_ALERT_EMAIL` | Alerts go to the `gm-alerts` group by default |
 | `GM_ADMIN_EMAILS` | `/admin/genius-mining` returns 404 in production |
 | `CQ_PARTNERSHIP_EMAIL` | `/institutions` shows the `partners@campusquestapp.com` placeholder |
-| `CQ_LEGAL_ENTITY`, `CQ_LEGAL_ADDRESS` | `/privacy` and `/terms` render a provisional banner and name no controller |
+| `CQ_LEGAL_ENTITY`, `CQ_LEGAL_ADDRESS` | Falls back to `CampusQuest, Inc.` with no postal address, which keeps the provisional banner up |
+| `CQ_LEGAL_REVIEWED` | The provisional banner stays up. Set to `true` only once counsel has signed off |
 | `CQ_PRIVACY_EMAIL` | Data requests fall back to `CQ_PARTNERSHIP_EMAIL` |
 | `NEXT_PUBLIC_SOCIAL_INSTAGRAM`, `_TWITTER`, `_LINKEDIN` | The footer renders no social icons rather than dead links |
 | `CQ_LOCAL_ACTIVITIES_PATH` | The directory falls back to a JSON file under the temp directory |
@@ -255,6 +330,8 @@ Two pieces are not code and have to be done in the Supabase dashboard.
      institutional seats and admin grants, which the deletion clock reads.
    - [`0004_activities.sql`](supabase/migrations/0004_activities.sql) —
      the activity directory, with public read limited to listed and verified rows.
+   - [`0005_reports_and_age.sql`](supabase/migrations/0005_reports_and_age.sql) —
+     student directory corrections, and the age record on `gm_sessions`.
    - [`0003_campus_demand.sql`](supabase/migrations/0003_campus_demand.sql) —
      students asking their school to cover Genius Mining.
 2. **Point auth at Resend and allow the callback.** Enable the email provider, set
