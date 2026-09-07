@@ -22,7 +22,7 @@ import { defaultCampusId } from '@/lib/env';
 import { currentIdentity, ensureDevIdentity } from '@/lib/gm/identity';
 import { CONSENT_COPY_VERSION, type GeniusMiningRecord } from '@/lib/gm/records';
 import { getStore } from '@/lib/gm/store';
-import { resolveEngine } from '@/lib/gm/transport';
+import { EngineUnavailableError, resolveEngine } from '@/lib/gm/transport';
 import { validateSection } from '@/lib/gm/section-validation';
 import { supabaseConfigured } from '@/lib/env';
 
@@ -257,7 +257,28 @@ export async function runAnalysisAction(
     instrument_version: record.instrument_version,
   } as QuestionnaireResponses;
 
-  const engine = resolveEngine(responses, record.d1_resolution);
+  let engine;
+  try {
+    engine = resolveEngine(responses, record.d1_resolution);
+  } catch (error) {
+    // No key in production. The student keeps their answers and their credits;
+    // handing them a fixture-generated profile would be the worse outcome.
+    if (error instanceof EngineUnavailableError) {
+      await sendOperatorAlert({
+        severity: 'action_required',
+        subject: 'A student tried to run an analysis with no engine configured',
+        participantCode: record.participant_code,
+        body: [
+          'ANTHROPIC_API_KEY is not set in production, so the analysis was refused',
+          'rather than answered with the stand-in engine.',
+          '',
+          'Their answers are saved and no credit was spent. Set the key and tell them.',
+        ].join('\n'),
+      });
+      return { ok: false, message: error.message };
+    }
+    throw error;
+  }
 
   let result;
   try {

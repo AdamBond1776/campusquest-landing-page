@@ -157,6 +157,24 @@ export type ResolvedEngine = {
   isMock: boolean;
 };
 
+/**
+ * Thrown instead of returning a stand-in profile to a real student.
+ *
+ * A mock analysis is indistinguishable from a real one once it is on the page.
+ * In development that is the point; in production it would mean handing someone
+ * a description of how they think that was produced by a fixture. Refusing is
+ * recoverable — their answers are saved and they can run it once the key is
+ * there. A fabricated profile is not.
+ */
+export class EngineUnavailableError extends Error {
+  constructor() {
+    super(
+      'The analysis engine is not configured. Your answers are saved and nothing is lost; we will email you the moment it can run.'
+    );
+    this.name = 'EngineUnavailableError';
+  }
+}
+
 export function resolveEngine(
   responses: QuestionnaireResponses,
   d1Resolution: D1Resolution
@@ -165,6 +183,10 @@ export function resolveEngine(
 
   if (engineMode() === 'anthropic' && key) {
     return { transport: anthropicTransport(key), model: 'claude-sonnet-4-6', isMock: false };
+  }
+
+  if (process.env.NODE_ENV === 'production' && process.env.GM_ALLOW_MOCK_IN_PRODUCTION !== 'true') {
+    throw new EngineUnavailableError();
   }
 
   return {
