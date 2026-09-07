@@ -57,19 +57,45 @@ alter table cq_activity_reports enable row level security;
 -- ---------------------------------------------------------------------------
 -- Age and guardian consent
 --
--- Stored on the Genius Mining session row, which is already the per-student
--- record. The gate is per capability rather than per site: an under-18 with
--- guardian consent gets the activity directory and never the instrument.
+-- Its own table rather than a column on gm_sessions, because the gate applies
+-- to every account and most accounts never touch the instrument. An under-18
+-- with guardian consent gets the activity directory and nothing else.
 -- ---------------------------------------------------------------------------
 
-alter table gm_sessions
-  add column if not exists age_record jsonb;
+create table if not exists cq_age_records (
+  -- Keyed by hash so the table can be joined without holding a second copy of
+  -- every address. The address itself is kept only while it is needed to reach
+  -- a guardian.
+  email_hash text primary key,
+  email text,
 
-comment on column gm_sessions.age_record is
-  'Bracket, birth year, attestation time, and any guardian consent. Birth year only: the year is enough to apply the rule and a full date of birth is more identifying than we need.';
+  -- Year, not date. The year is enough to apply the rule and a full date of
+  -- birth is more identifying than we need.
+  birth_year integer check (birth_year is null or birth_year between 1900 and 2100),
+  bracket text not null check (bracket in ('adult', 'minor', 'under_16', 'unknown')),
+  attested_at timestamptz not null default now(),
 
--- Finding accounts whose guardian has not yet responded, so a stalled request
--- can be chased or expired rather than sitting open forever.
-create index if not exists gm_sessions_guardian_pending_idx
-  on gm_sessions ((age_record -> 'guardian' ->> 'consented_at'))
-  where age_record -> 'guardian' is not null;
+  -- Guardian name, address, hashed token, expiry, and when they consented.
+  guardian jsonb,
+
+  updated_at timestamptz not null default now()
+);
+
+comment on table cq_age_records is
+  'The age gate is per capability, not per site. A 16 or 17 year old with guardian consent can browse the directory; Genius Mining and billing stay adults-only regardless.';
+comment on column cq_age_records.guardian is
+  'Stores a SHA-256 of the emailed token, never the token. Consent is live once given and not withdrawn; the expiry bounds how long a guardian has to respond, not how long consent lasts.';
+
+-- Guardian requests that were emailed and never answered, so they can be
+-- chased or expired instead of sitting open forever.
+create index if not exists cq_age_guardian_pending_idx
+  on cq_age_records ((guardian ->> 'consented_at'))
+  where guardian is not null;
+
+-- Looking up a pending consent by its token hash when a guardian follows the link.
+create index if not exists cq_age_token_idx
+  on cq_age_records ((guardian ->> 'token_hash'))
+  where guardian is not null;
+
+alter table cq_age_records enable row level security;
+-- No policy: written and read by the service role only.

@@ -1,3 +1,4 @@
+import { signedInEmail } from '@/lib/session';
 import Onboarding from './onboarding-view';
 
 export default async function SignupPage({
@@ -10,6 +11,9 @@ export default async function SignupPage({
   // so the first paint already knows which form it is.
   const params = await searchParams;
   const flag = Array.isArray(params.finish) ? params.finish[0] : params.finish;
+  const finishing = flag === '1';
 
-  return <Onboarding finishing={flag === '1'} />;
+  // The age answer is stored against an address. In the finishing path there is
+  // no email field on the form, so it has to come from the session.
+  return <Onboarding finishing={finishing} sessionEmail={finishing ? await signedInEmail() : null} />;
 }

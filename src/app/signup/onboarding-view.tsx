@@ -29,6 +29,13 @@ import {
 import CheckInbox from '@/components/CheckInbox';
 import TextField from '@/components/TextField';
 import FormAlert from '@/components/FormAlert';
+import AgeFields, {
+  EMPTY_AGE,
+  ageAnswerComplete,
+  bracketOf,
+  type AgeAnswer,
+} from '@/components/signup/AgeFields';
+import { recordAge } from '@/app/signup/age-actions';
 import { completeOnboarding, signUpWithEmail, type Plan, type Role } from '@/lib/auth';
 import { PLANS, PRICE_LOCK_COPY, STUDENT_PLANS, formatPrice } from '@/lib/pricing';
 import { validateEmail } from '@/lib/validation';
@@ -72,7 +79,13 @@ type SentLink = {
  * missing, so the email step is dropped and the answers are written straight to
  * the account instead of being carried on a second magic link.
  */
-export default function Onboarding({ finishing = false }: { finishing?: boolean }) {
+export default function Onboarding({
+  finishing = false,
+  sessionEmail = null,
+}: {
+  finishing?: boolean;
+  sessionEmail?: string | null;
+}) {
   const router = useRouter();
   // Nothing to introduce when the account already exists — start on the first
   // real question instead of the welcome step.
@@ -81,6 +94,7 @@ export default function Onboarding({ finishing = false }: { finishing?: boolean 
   const [interests, setInterests] = useState<string[]>([]);
   const [plan, setPlan] = useState<Plan | null>(null);
   const [email, setEmail] = useState('');
+  const [age, setAge] = useState<AgeAnswer>(EMPTY_AGE);
   const [fieldErrors, setFieldErrors] = useState<{ email?: string }>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -97,10 +111,40 @@ export default function Onboarding({ finishing = false }: { finishing?: boolean 
     event.preventDefault();
     if (submitting || !role || !plan) return;
 
-    if (finishing) {
-      setFormError(null);
-      setSubmitting(true);
+    const address = finishing ? sessionEmail : email;
 
+    if (!finishing) {
+      const emailError = validateEmail(email);
+      if (emailError) {
+        setFieldErrors({ email: emailError });
+        setFormError(null);
+        return;
+      }
+    }
+
+    setFieldErrors({});
+    setFormError(null);
+    setSubmitting(true);
+
+    // The age answer is written before the account so the gate is in place the
+    // first time they sign in. Without an address there is nothing to key it to,
+    // which only happens if the session expired mid-form.
+    if (address && age.birthYear) {
+      const recorded = await recordAge({
+        email: address,
+        birthYear: age.birthYear,
+        guardianName: age.guardianName,
+        guardianEmail: age.guardianEmail,
+      });
+
+      if (!recorded.ok) {
+        setFormError(recorded.message);
+        setSubmitting(false);
+        return;
+      }
+    }
+
+    if (finishing) {
       const result = await completeOnboarding({ role, interests, plan });
       if (!result.ok) {
         setFormError(result.message);
@@ -111,18 +155,6 @@ export default function Onboarding({ finishing = false }: { finishing?: boolean 
       router.push('/welcome?new=1');
       return;
     }
-
-    const emailError = validateEmail(email);
-
-    if (emailError) {
-      setFieldErrors({ email: emailError });
-      setFormError(null);
-      return;
-    }
-
-    setFieldErrors({});
-    setFormError(null);
-    setSubmitting(true);
 
     const result = await signUpWithEmail({ email, role, interests, plan });
 
@@ -181,6 +213,16 @@ export default function Onboarding({ finishing = false }: { finishing?: boolean 
 
   const handlePlanSelect = (p: Plan) => {
     setPlan(p);
+  };
+
+  // A minor cannot hold a subscription, so answering "under 18" drops any paid
+  // plan already picked rather than letting them reach a checkout they are not
+  // allowed to complete.
+  const handleAgeChange = (next: AgeAnswer) => {
+    setAge(next);
+    if (bracketOf(next) === 'minor' && plan !== 'free' && role === 'student') {
+      setPlan('free');
+    }
   };
 
   return (
@@ -247,6 +289,8 @@ export default function Onboarding({ finishing = false }: { finishing?: boolean 
                   role={role}
                   plan={plan}
                   email={email}
+                  age={age}
+                  onAge={handleAgeChange}
                   onEmail={handleEmailChange}
                   onPlanSelect={handlePlanSelect}
                   onSubmit={handleSubmit}
@@ -462,6 +506,8 @@ function AccountStep({
   role,
   plan,
   email,
+  age,
+  onAge,
   onEmail,
   onPlanSelect,
   onSubmit,
@@ -473,6 +519,8 @@ function AccountStep({
   role: Role | null;
   plan: Plan | null;
   email: string;
+  age: AgeAnswer;
+  onAge: (next: AgeAnswer) => void;
   onEmail: (v: string) => void;
   onPlanSelect: (p: Plan) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
@@ -482,6 +530,10 @@ function AccountStep({
   finishing: boolean;
 }) {
   const isOrg = role === 'organization';
+  const bracket = bracketOf(age);
+  // A club page is a paid account, and a minor cannot be held to that contract.
+  const orgNeedsAdult = isOrg && bracket === 'minor';
+  const ageOk = ageAnswerComplete(age) && !orgNeedsAdult;
 
   const heading = finishing
     ? isOrg
@@ -591,9 +643,18 @@ function AccountStep({
           />
         )}
 
+        <AgeFields value={age} onChange={onAge} disabled={submitting} />
+
+        {orgNeedsAdult && (
+          <div className="rounded-xl border border-red-500/25 bg-red-500/10 p-4 text-sm leading-relaxed text-red-100">
+            A club account is a paid subscription, so it has to be held by someone 18 or
+            over. Ask an officer or advisor who is 18+ to create it, then they can add you.
+          </div>
+        )}
+
         <button
           type="submit"
-          disabled={(!finishing && !email) || !plan || submitting}
+          disabled={(!finishing && !email) || !plan || !ageOk || submitting}
           className="btn-gold w-full disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0"
         >
           {submitting ? (

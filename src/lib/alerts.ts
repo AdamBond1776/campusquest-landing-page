@@ -79,6 +79,102 @@ export async function sendOperatorAlert(alert: OperatorAlert): Promise<DeliveryR
  * retaking the questionnaire, because a student who reads this and assumes their
  * answers are recoverable has been misled.
  */
+/**
+ * Sends a plain email, logging instead when Resend is not configured.
+ *
+ * Local development has no key, and a missing key should not turn a sign-up
+ * into an error page. The message goes to the console so the flow can still be
+ * followed end to end.
+ */
+async function send(to: string, subject: string, body: string): Promise<DeliveryResult> {
+  if (!alertsConfigured()) {
+    console.warn(`[CampusQuest] would email ${to}: ${subject}\n${body}`);
+    return { delivered: false, detail: 'RESEND_API_KEY is not set; the email was logged only.' };
+  }
+
+  try {
+    const resend = new Resend(resendApiKey());
+    const { error } = await resend.emails.send({ from: mailFrom(), to: [to], subject, text: body });
+    if (error) return { delivered: false, detail: error.message };
+    return { delivered: true, detail: `Sent to ${to}.` };
+  } catch (error) {
+    return { delivered: false, detail: (error as Error).message };
+  }
+}
+
+/**
+ * Asks a parent or guardian to approve a 16 or 17 year old's account.
+ *
+ * Written to be read by someone who has never heard of CampusQuest and is
+ * suspicious of an unexpected email about their child, because that is the
+ * common case. It says who we are, what the account can do, what it cannot do,
+ * and how to make it stop — before it asks for anything.
+ */
+export async function sendGuardianRequest(options: {
+  guardianEmail: string;
+  guardianName: string;
+  studentEmail: string;
+  confirmUrl: string;
+  operator: string;
+}): Promise<DeliveryResult> {
+  const { guardianEmail, guardianName, studentEmail, confirmUrl, operator } = options;
+
+  const body = [
+    `Hello ${guardianName},`,
+    '',
+    `${studentEmail} signed up for CampusQuest and told us they are under 18, so we need`,
+    'your say-so before their account opens.',
+    '',
+    'WHAT CAMPUSQUEST IS',
+    'A directory of clubs, events and home games at Rhode Island universities. It is run by',
+    `${operator}.`,
+    '',
+    'WHAT THEIR ACCOUNT CAN DO',
+    '  - Browse and search campus clubs, events and athletics schedules',
+    '  - Save activities they are interested in',
+    '  - Tell us when a listing is out of date',
+    '',
+    'WHAT IT CANNOT DO, BECAUSE THEY ARE UNDER 18',
+    '  - No paid subscription. Their account is free and cannot be charged.',
+    '  - No Genius Mining. That is our questionnaire about strengths and interests,',
+    '    which involves long-form writing analysed by an AI service. It is 18+ only',
+    '    and their account cannot reach it.',
+    '',
+    'WHAT WE STORE ABOUT THEM',
+    'Their email address, their campus, the activities they save, and the year they were',
+    'born. Not a full date of birth. We do not sell personal information.',
+    '',
+    'TO APPROVE, FOLLOW THIS LINK:',
+    confirmUrl,
+    '',
+    'The link works once and expires in 14 days.',
+    '',
+    'TO REFUSE: ignore this email. Nothing opens and the request lapses on its own. You can',
+    'also reply to this message and we will delete what we hold about them.',
+    '',
+    'You can withdraw your approval at any time by replying to this email.',
+    '',
+    'Full policies: privacy and terms are linked from the bottom of every page on our site.',
+  ].join('\n');
+
+  return send(guardianEmail, 'Approve a CampusQuest account for your student', body);
+}
+
+/** Tells the student their account is open, once the guardian has confirmed. */
+export async function sendGuardianApproved(studentEmail: string): Promise<DeliveryResult> {
+  const body = [
+    'Good news — your parent or guardian approved your CampusQuest account.',
+    '',
+    'The activity directory is open to you now. Sign in and take a look at what is on',
+    'at your campus this week.',
+    '',
+    'A reminder of what stays closed until you turn 18: paid plans and Genius Mining.',
+    'Everything else works.',
+  ].join('\n');
+
+  return send(studentEmail, 'Your CampusQuest account is open', body);
+}
+
 export async function sendRetentionWarning(options: {
   to: string;
   day: 7 | 25;

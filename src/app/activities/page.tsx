@@ -12,6 +12,8 @@ import { PUBLIC_STATUSES, type Activity } from '@/lib/activities/types';
 import { formatWhen } from '@/lib/activities/format';
 import { campusName } from '@/lib/campuses';
 import { defaultCampusId } from '@/lib/env';
+import { gate } from '@/lib/gate';
+import { privacyEmail } from '@/lib/legal';
 import { siteUrl } from '@/lib/site';
 
 export const metadata: Metadata = {
@@ -33,6 +35,9 @@ function first(value: string | string[] | undefined): string | undefined {
 const PAGE_SIZE = 60;
 
 export default async function ActivitiesPage({ searchParams }: { searchParams: SearchParams }) {
+  const access = await gate('directory');
+  if (!access.allowed) return <DirectoryLocked reason={access.reason} />;
+
   const params = await searchParams;
   const campusId = first(params.campus) ?? defaultCampusId();
   const kind = first(params.kind);
@@ -250,6 +255,39 @@ export default async function ActivitiesPage({ searchParams }: { searchParams: S
               </div>
             </>
           )}
+        </div>
+      </main>
+      <Footer />
+    </>
+  );
+}
+
+/**
+ * Shown to a signed-in account that is not cleared for the directory.
+ *
+ * In practice this is a 16 or 17 year old whose guardian has not answered yet.
+ * It says what is happening and what to do about it, because "access denied" to
+ * someone who did nothing wrong and is waiting on a third party is not useful.
+ */
+function DirectoryLocked({ reason }: { reason: string }) {
+  return (
+    <>
+      <Navbar />
+      <main className="min-h-[70vh] bg-brand-950 px-5 py-20 text-white">
+        <div className="mx-auto max-w-lg rounded-2xl border border-gold-500/25 bg-gold-500/10 p-6 sm:p-8">
+          <h1 className="text-xl font-extrabold sm:text-2xl">Almost there</h1>
+          <p className="mt-4 text-sm leading-relaxed text-white/70">{reason}</p>
+          <p className="mt-3 text-sm leading-relaxed text-white/50">
+            Approval links can land in spam, so it is worth asking them to check. If the
+            link has expired we can send another one — email{' '}
+            <a className="text-gold-400 hover:text-gold-500" href={`mailto:${privacyEmail()}`}>
+              {privacyEmail()}
+            </a>
+            .
+          </p>
+          <Link href="/" className="btn-gold mt-6 inline-flex">
+            Back to home
+          </Link>
         </div>
       </main>
       <Footer />
