@@ -3,7 +3,7 @@
 Marketing site, signup flow, and the Genius Mining questionnaire for CampusQuest, a
 personalized discovery layer for college life. Students find the clubs, events, and
 opportunities that match their interests; organizations get discovered by the
-students who actually want to be there. Piloting at the University of Rhode Island.
+students who actually want to be there. Piloting in Rhode Island.
 
 ## Running locally
 
@@ -36,6 +36,7 @@ variable switches on.
 | `npm run test:watch` | Vitest in watch mode |
 | `npm run smoke` | Browser smoke test of auth and consent (needs Chrome) |
 | `npm run smoke:gm` | Browser walkthrough of the whole instrument (needs Chrome) |
+| `npm run smoke:institutions` | Browser test of the institutional page and demand button (needs Chrome) |
 | `npm run build:check` | Build into a scratch directory, safe to run while `dev` is up |
 | `npm run og` | Regenerate the social card image (needs Chrome) |
 | `npm run gm:prompts` | Rebuild the bundled prompt module from the source `.txt` files |
@@ -51,6 +52,7 @@ variable switches on.
 | `/welcome` | Post-signup and post-login confirmation |
 | `/auth/callback` | Exchanges the emailed code for a session |
 | `/auth/auth-code-error` | Expired or rejected link |
+| `/institutions` | Level Up Rhode Island: the public institutional page and the demand button |
 | `/genius-mining` | Consent screen and what the instrument is |
 | `/genius-mining/questionnaire` | The instrument itself, sections A through E |
 | `/genius-mining/profile` | Run the analysis, then the student-facing profile |
@@ -101,6 +103,37 @@ Analyses run against a stand-in engine unless `ANTHROPIC_API_KEY` is set, and
 profiles produced that way are stamped `mock-engine`, which the advisor printout
 displays as a warning. A single analysis run is capped at two model calls.
 
+### Entitlement is not billing
+
+Three things can entitle a student to Genius Mining — an admin grant, an
+institutional seat their school bought, or their own subscription — and
+`resolveEntitlement` picks between them in that order. **The 30-day deletion clock
+reads the resolved entitlement and never the Stripe snapshot.** When a school
+covers a student we cancel their subscription and refund the unused days, which
+means Stripe emits `customer.subscription.deleted`; a clock keyed to billing would
+read that as abandonment and delete their answers on the day their school started
+paying for them.
+
+An institutional seat buys the instrument and the advisor printout at the Basic
+level. It deliberately does not buy the social layer.
+
+### Pricing lives in one file
+
+[`src/lib/pricing.ts`](src/lib/pricing.ts) is the only place a price is written
+down. The introductory offer has no end date on purpose: it promises a price lock
+for as long as a subscription stays continuously active, plus 30 days' notice
+before it closes to new sign-ups. Set `INTRO_OFFER.closesOn` when that notice
+actually goes out.
+
+### Research materials
+
+[`docs/research/`](docs/research/) holds the IRB protocol outline, the nine-month
+pilot design, how to source the retention figures, and the partner brief. They are
+source material to be carried elsewhere, not something the app reads. The one
+irreversible item is in the first: consent cannot be applied retroactively, so a
+cohort that takes the instrument under the product consent alone can never become
+research data.
+
 ## Environment
 
 Copy `.env.example` to `.env.local` and set only what you need; every variable is
@@ -115,15 +148,21 @@ optional and documented there. The short version:
 | `CRON_SECRET` | The retention endpoint refuses to run at all |
 | `GM_ALERT_EMAIL` | Alerts go to the `gm-alerts` group by default |
 | `GM_ADMIN_EMAILS` | `/admin/genius-mining` returns 404 in production |
+| `CQ_PARTNERSHIP_EMAIL` | `/institutions` shows the `partners@campusquestapp.com` placeholder |
 | `NEXT_PUBLIC_SITE_URL` | Social card and canonical URLs fall back to the Vercel host |
 
 ## Supabase setup
 
 Two pieces are not code and have to be done in the Supabase dashboard.
 
-1. **Run the migration.** Apply [`supabase/migrations/0001_genius_mining.sql`](supabase/migrations/0001_genius_mining.sql),
-   which creates `gm_sessions`, the de-identified `gm_corpus`, the participant-code
-   sequence, and the row-level security policies.
+1. **Run the migrations**, in order:
+   - [`0001_genius_mining.sql`](supabase/migrations/0001_genius_mining.sql) —
+     `gm_sessions`, the de-identified `gm_corpus`, the participant-code sequence,
+     and the row-level security policies.
+   - [`0002_entitlement.sql`](supabase/migrations/0002_entitlement.sql) —
+     institutional seats and admin grants, which the deletion clock reads.
+   - [`0003_campus_demand.sql`](supabase/migrations/0003_campus_demand.sql) —
+     students asking their school to cover Genius Mining.
 2. **Point auth at Resend and allow the callback.** Enable the email provider, set
    the SMTP block to Resend with `auth.campusquestapp.com` as the sender, and add
    `/auth/callback` on every origin you use — production, previews, and
@@ -152,9 +191,10 @@ packages/
   genius-mining/  HGL-owned instrument, contracts, and policy logic
 docs/
   genius-mining/  POLICY.md — the decisions the code enforces
+  research/       IRB protocol, pilot study design, and the institutional briefs
 supabase/
   migrations/     SQL applied to the Supabase project
-scripts/          Social card image generator
+scripts/          Social card generator and the headless-browser smoke suites
 ```
 
 The `@` alias points at `src/`.
@@ -183,6 +223,7 @@ starts by clicking a checkbox purely to prove React is attached.
 npm run dev          # in one shell
 npm run smoke        # in another — auth and consent
 npm run smoke:gm     # the whole instrument, consent through advisor printout
+npm run smoke:institutions   # the institutional page and the demand round trip
 ```
 
 `smoke:gm` deliberately drives the awkward case rather than a clean one. It ties
@@ -204,9 +245,19 @@ lucide-react for icons. Brand colors (`brand`, `cream`, `gold`, `ink`) live in
 
 ## Status
 
-Pre-launch. The marketing page, auth, and the full Genius Mining flow — consent,
-questionnaire, analysis, student profile, advisor printout, retention job, admin
-dashboard — are built and tested. Outstanding: Stripe price-to-tier mapping and
-`user_id` on subscription metadata, the URInvolved pathway export (seven of eight
-working words are below the coverage gate, so recommendations stay off), and legal
-review of the consent copy.
+Pre-launch. The marketing page, auth, the institutional page, and the full Genius
+Mining flow — consent, questionnaire, analysis, student profile, advisor printout,
+retention job, admin dashboard — are built and tested.
+
+Outstanding:
+
+- Stripe price-to-tier mapping and `user_id` on subscription metadata, without
+  which a webhook cannot tell whose data it is looking at.
+- An admin surface for granting and revoking institutional seats. The logic and
+  the storage exist; today a seat is set through the admin path on
+  `/api/billing/subscription-event`.
+- The URInvolved pathway export. Seven of eight working words are below the
+  coverage gate, so recommendations stay off.
+- Legal review of the consent copy, and a research consent that does not exist yet.
+- `CQ_PARTNERSHIP_EMAIL` — the institutional page currently shows a placeholder
+  address.
