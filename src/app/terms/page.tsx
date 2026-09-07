@@ -205,7 +205,9 @@ export default function TermsPage() {
 
       <h2 id="ending">Ending it</h2>
       <p>
-        Delete your account whenever you like, from your account settings or by emailing us. We can
+        Delete your account whenever you like by emailing{' '}
+        <a href={`mailto:${contact}`}>{contact}</a>; self-service account settings are not built
+        yet, so for now a person does it for you and confirms when it is done. We can
         suspend or close an account that breaks these terms, and for anything short of serious
         misuse we will tell you why first and give you a chance to fix it. Your right to have your
         data deleted survives your account closing, and is described in the{' '}
