@@ -49,6 +49,10 @@ export default function QuestionnaireForm({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [warnings, setWarnings] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
+  // Which set of soft warnings the student has already been shown. A warning
+  // that never reaches the screen is the same as no warning at all, so the first
+  // submit that raises one stops to display it. The second submit goes through.
+  const [acknowledged, setAcknowledged] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<SaveState>('idle');
   const [tiebreakChoice, setTiebreakChoice] = useState<Verb | null>(null);
   const [submitting, startSubmit] = useTransition();
@@ -158,6 +162,15 @@ export default function QuestionnaireForm({
     setErrors({});
     setFormError(null);
 
+    // Hold once on a soft warning so it is actually read. This is not a block:
+    // pressing again continues with the answer exactly as written, which is the
+    // whole point of C3 warning rather than refusing.
+    const raised = Object.keys(validation.warnings).sort().join(',');
+    if (raised !== '' && acknowledged !== raised) {
+      setAcknowledged(raised);
+      return;
+    }
+
     startSubmit(async () => {
       const result = await submitSection(sectionId, cleaned);
 
@@ -169,6 +182,8 @@ export default function QuestionnaireForm({
 
       dirty.current = false;
       setValues(cleaned);
+      setAcknowledged(null);
+      setWarnings({});
 
       const nextCompleted = completed.includes(sectionId) ? completed : [...completed, sectionId];
       setCompleted(nextCompleted);
@@ -189,6 +204,9 @@ export default function QuestionnaireForm({
 
   const sittingChanges =
     sectionIndex > 0 && getSection(SECTION_IDS[sectionIndex - 1]).sitting !== section.sitting;
+
+  const raisedWarnings = Object.keys(warnings).sort().join(',');
+  const holdingOnWarning = raisedWarnings !== '' && acknowledged === raisedWarnings;
 
   return (
     <div className="space-y-8">
@@ -291,6 +309,11 @@ export default function QuestionnaireForm({
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Saving section {section.id}
               </>
+            ) : holdingOnWarning ? (
+              <>
+                Continue anyway
+                <ArrowRight className="h-4 w-4" />
+              </>
             ) : isFinalSection ? (
               <>
                 Finish and run the analysis
@@ -304,6 +327,13 @@ export default function QuestionnaireForm({
             )}
           </button>
         </div>
+
+        {holdingOnWarning ? (
+          <p className="mt-2.5 text-xs font-medium text-gold-600">
+            There is a note above worth reading first. Nothing is wrong — press again to continue
+            with your answer as it is.
+          </p>
+        ) : null}
 
         <p className="mt-2.5 text-xs text-brand-400">
           Once a section is submitted it stays submitted — you cannot come back and change it. That

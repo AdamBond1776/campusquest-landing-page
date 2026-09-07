@@ -181,8 +181,11 @@ a name leaves the form.
   asks students to write things they have never said out loud, and some will.
 - **C3 soft-warns and never hard-blocks.** A thin C3 degrades the whole reading,
   but the students most likely to write one are the students a hard block would
-  push out of the instrument entirely. This remains the open high-priority design
-  problem in v1.3.
+  push out of the instrument entirely. The first submit that raises the warning
+  stops on the section so the note is actually read, and the button becomes
+  "Continue anyway"; pressing it again submits the answer exactly as written.
+  Warning without stopping was the same as no warning, because validation passed
+  and the section advanced before the student saw anything.
 - **Nothing is filed until the student signs off.** Only `accepted` and `filed`
   enter reporting.
 - **The profile never cites anything in `thin_spots`.** Both renderings run every
