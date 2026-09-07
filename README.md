@@ -5,6 +5,11 @@ personalized discovery layer for college life. Students find the clubs, events, 
 opportunities that match their interests; organizations get discovered by the
 students who actually want to be there. Piloting in Rhode Island.
 
+> **Taking this to production?** [`GO_LIVE.md`](GO_LIVE.md) is the checklist:
+> every credential, what breaks without it, the two gaps that are code rather
+> than configuration, and the order to work in. This file explains *why* things
+> are shaped the way they are; that one is *what to do*.
+
 ## Running locally
 
 Requires Node 20.9 or newer.
