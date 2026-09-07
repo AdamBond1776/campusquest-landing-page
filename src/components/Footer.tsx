@@ -1,5 +1,6 @@
-import { Link } from 'react-router-dom';
-import { Compass, Instagram, Twitter, Linkedin } from 'lucide-react';
+import Link from 'next/link';
+import { Compass } from 'lucide-react';
+import { Instagram, Linkedin, Twitter } from '@/components/BrandIcons';
 
 export default function Footer() {
   return (
@@ -8,7 +9,7 @@ export default function Footer() {
         <div className="grid md:grid-cols-4 gap-10">
           {/* Brand */}
           <div className="md:col-span-2">
-            <Link to="/" className="flex items-center gap-2.5">
+            <Link href="/" className="flex items-center gap-2.5">
               <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-brand-600 text-white">
                 <Compass className="w-5 h-5" strokeWidth={2.5} />
               </div>
@@ -69,12 +70,12 @@ export default function Footer() {
             </h4>
             <ul className="space-y-3">
               <li>
-                <Link to="/signup" className="text-sm text-white/60 hover:text-white transition-colors">
+                <Link href="/signup" className="text-sm text-white/60 hover:text-white transition-colors">
                   Sign up
                 </Link>
               </li>
               <li>
-                <Link to="/login" className="text-sm text-white/60 hover:text-white transition-colors">
+                <Link href="/login" className="text-sm text-white/60 hover:text-white transition-colors">
                   Log in
                 </Link>
               </li>

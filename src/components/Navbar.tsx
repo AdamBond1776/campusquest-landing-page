@@ -1,5 +1,7 @@
+'use client';
+
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 import { Menu, X, Compass } from 'lucide-react';
 
 export default function Navbar() {
@@ -30,7 +32,7 @@ export default function Navbar() {
       <nav className="max-w-content mx-auto px-5 sm:px-8">
         <div className="flex items-center justify-between h-16 lg:h-20">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2.5 group">
+          <Link href="/" className="flex items-center gap-2.5 group">
             <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-brand-600 text-white transition-transform group-hover:scale-105">
               <Compass className="w-5 h-5" strokeWidth={2.5} />
             </div>
@@ -55,12 +57,12 @@ export default function Navbar() {
           {/* Desktop CTAs */}
           <div className="hidden lg:flex items-center gap-3">
             <Link
-              to="/login"
+              href="/login"
               className="text-sm font-semibold text-ink/80 hover:text-brand-600 transition-colors px-4 py-2"
             >
               Log in
             </Link>
-            <Link to="/signup" className="btn-primary">
+            <Link href="/signup" className="btn-primary">
               Get the app
             </Link>
           </div>
@@ -92,14 +94,14 @@ export default function Navbar() {
               ))}
               <div className="flex flex-col gap-3 mt-4 px-2">
                 <Link
-                  to="/login"
+                  href="/login"
                   onClick={() => setOpen(false)}
                   className="btn-secondary w-full"
                 >
                   Log in
                 </Link>
                 <Link
-                  to="/signup"
+                  href="/signup"
                   onClick={() => setOpen(false)}
                   className="btn-primary w-full"
                 >

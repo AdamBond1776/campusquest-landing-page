@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 import {
   Check,
   Sparkles,
@@ -171,7 +171,7 @@ export default function Pricing() {
               </ul>
 
               <Link
-                to="/signup"
+                href="/signup"
                 className={`w-full ${
                   t.highlight
                     ? 'btn-gold'
@@ -211,7 +211,7 @@ export default function Pricing() {
                   {tiers[3].tagline}
                 </p>
 
-                <Link to="/signup" className="btn-gold">
+                <Link href="/signup" className="btn-gold">
                   {tiers[3].cta}
                   <ArrowRight className="w-4 h-4" />
                 </Link>

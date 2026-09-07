@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 import {
   Globe,
   CalendarRange,
@@ -93,7 +93,7 @@ export default function ForOrganizations() {
         </div>
 
         <div className="mt-12 flex flex-col sm:flex-row items-center gap-4 justify-center">
-          <Link to="/signup" className="btn-gold">
+          <Link href="/signup" className="btn-gold">
             Claim your club page — $49/month
             <ArrowRight className="w-4 h-4" />
           </Link>

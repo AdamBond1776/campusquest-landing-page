@@ -1,6 +1,16 @@
 node_modules
-dist
-dist-ssr
+
+# Next.js
+.next
+out
+next-env.d.ts
+
+# Vercel
+.vercel
+
+# Test and build artifacts
+coverage
+*.tsbuildinfo
 *.local
 
 .env

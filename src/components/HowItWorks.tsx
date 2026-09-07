@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 import { UserPlus, Sliders, Compass, ArrowRight } from 'lucide-react';
 
 const steps = [
@@ -57,7 +57,7 @@ export default function HowItWorks() {
         </div>
 
         <div className="mt-14 text-center">
-          <Link to="/signup" className="btn-primary">
+          <Link href="/signup" className="btn-primary">
             Start your quest
             <ArrowRight className="w-4 h-4" />
           </Link>

@@ -1,0 +1,43 @@
+{
+  "_source": "Reconstructed from GM001_Analysis_Result.pdf, analysis session 26 August 2026.",
+  "_caution": "GM-001 took instrument v1.1 (5 pages, no A4, pre-CONNECTED verb set). This fixture tests the ENGINE for regression, not the current instrument. Do not treat a pass as evidence that v1.3 is validated.",
+  "participant_code": "GM-001",
+  "instrument_version": "1.1",
+  "run_at": "2026-08-26",
+  "primary_working_word": "BUILDER",
+  "confidence": "MEDIUM",
+  "secondary_pattern": {
+    "word": null,
+    "note": "SORTED was tagged twice but only to household maintenance, and the body report on the sorting instance was 'nothing'."
+  },
+  "disagreement_with_self_tally": {
+    "value": false,
+    "reason": "BUILDER holds, but the arithmetic is weak - only five of six verbs filled, BUILT was 2 of 5, and instances 3, 4 and 5 show crossed-out first choices. The word survives on C1 and D3, not on the tally."
+  },
+  "thin_spots": [
+    "A1#6",
+    "B#6",
+    "A2",
+    "A3",
+    "C2#4",
+    "E2",
+    "E3"
+  ],
+  "_d1_note": "GM-001 IS THE BROKEN TIEBREAK CASE. Tally was BUILT x2, SORTED x2, NOTICED x1, one blank - a tie. C1 was instances 1 and 4: instance 1 is BUILT, instance 4 is SORTED. Both tied verbs, one each, so the form's rule does not resolve. Expected d1_resolution.resolution is UNRESOLVED with candidates [BUILT, SORTED].",
+  "d1_resolution": {
+    "computed_verb": null,
+    "resolution": "UNRESOLVED",
+    "candidates": [
+      "BUILT",
+      "SORTED"
+    ],
+    "student_tiebreak_choice": null
+  },
+  "_assertions": {
+    "primary_working_word_must_equal": "BUILDER",
+    "confidence_must_not_be": "LOW",
+    "must_validate_against": "profile_output_contract.schema.json",
+    "d1_resolution_must_equal": "UNRESOLVED"
+  },
+  "_still_needed": "gm001_responses.json cannot be produced yet - the original handwritten pages exist only as photographs. Transcribe them to complete the fixture."
+}

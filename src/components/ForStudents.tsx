@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 import {
   Search,
   Bookmark,
@@ -95,7 +95,7 @@ export default function ForStudents() {
         </div>
 
         <div className="mt-12 flex flex-col sm:flex-row items-center gap-4 justify-center">
-          <Link to="/signup" className="btn-primary">
+          <Link href="/signup" className="btn-primary">
             Start browsing free
             <ArrowRight className="w-4 h-4" />
           </Link>

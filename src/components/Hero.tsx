@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 import { ArrowRight, Sparkles, MapPin, Calendar, Users, Trophy } from 'lucide-react';
 
 export default function Hero() {
@@ -47,7 +47,7 @@ export default function Hero() {
             </p>
 
             <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
-              <Link to="/signup" className="btn-gold">
+              <Link href="/signup" className="btn-gold">
                 Start browsing free
                 <ArrowRight className="w-4 h-4" />
               </Link>
