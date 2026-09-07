@@ -16,6 +16,7 @@
     "test:watch": "vitest",
     "smoke": "node scripts/smoke.mjs",
     "smoke:gm": "node scripts/smoke-gm.mjs",
+    "smoke:institutions": "node scripts/smoke-institutions.mjs",
     "og": "node scripts/generate-og-image.mjs",
     "gm:prompts": "node packages/genius-mining/scripts/generate-prompts.mjs"
   },

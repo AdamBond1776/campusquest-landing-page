@@ -74,7 +74,7 @@ export default function WelcomeView({
         {
           icon: CalendarCheck,
           title: 'Your first weekly feed',
-          body: 'The pilot opens at the University of Rhode Island. We email you the moment it is live.',
+          body: 'The Rhode Island pilot opens this year. We email you the moment it is live.',
         },
       ];
 

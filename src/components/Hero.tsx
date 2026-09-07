@@ -29,7 +29,7 @@ export default function Hero() {
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/15 backdrop-blur-sm mb-6">
               <Sparkles className="w-4 h-4 text-gold-400" />
               <span className="text-xs font-semibold tracking-wide text-white/90">
-                Pilot launching at University of Rhode Island
+                Level Up Rhode Island — pilot opening this year
               </span>
             </div>
 

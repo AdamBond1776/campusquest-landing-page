@@ -42,24 +42,29 @@ export default function Footer() {
             </h4>
             <ul className="space-y-3">
               <li>
-                <a href="#students" className="text-sm text-white/60 hover:text-white transition-colors">
+                <a href="/#students" className="text-sm text-white/60 hover:text-white transition-colors">
                   For Students
                 </a>
               </li>
               <li>
-                <a href="#organizations" className="text-sm text-white/60 hover:text-white transition-colors">
+                <a href="/#organizations" className="text-sm text-white/60 hover:text-white transition-colors">
                   For Organizations
                 </a>
               </li>
               <li>
-                <a href="#how-it-works" className="text-sm text-white/60 hover:text-white transition-colors">
+                <a href="/#how-it-works" className="text-sm text-white/60 hover:text-white transition-colors">
                   How It Works
                 </a>
               </li>
               <li>
-                <a href="#pricing" className="text-sm text-white/60 hover:text-white transition-colors">
+                <a href="/#pricing" className="text-sm text-white/60 hover:text-white transition-colors">
                   Pricing
                 </a>
+              </li>
+              <li>
+                <Link href="/institutions" className="text-sm text-white/60 hover:text-white transition-colors">
+                  For Schools
+                </Link>
               </li>
             </ul>
           </div>
@@ -98,7 +103,7 @@ export default function Footer() {
             © 2026 CampusQuest. Built by students, for students.
           </p>
           <p className="text-xs text-white/40">
-            Pilot launching at the University of Rhode Island
+            Level Up Rhode Island — selecting three founding partners
           </p>
         </div>
       </div>

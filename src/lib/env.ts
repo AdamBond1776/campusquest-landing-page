@@ -104,3 +104,14 @@ export function adminEmails(): string[] {
 export function defaultCampusId(): string {
   return str('GM_CAMPUS_ID') ?? 'uri';
 }
+
+/**
+ * Where an administrator reading the institutional page should write.
+ *
+ * Configurable because the address does not exist yet. Set
+ * `CQ_PARTNERSHIP_EMAIL` once the mailbox is live; until then the page shows
+ * the placeholder, which is at least on a domain we control.
+ */
+export function partnershipEmail(): string {
+  return str('CQ_PARTNERSHIP_EMAIL') ?? 'partners@campusquestapp.com';
+}

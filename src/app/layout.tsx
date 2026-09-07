@@ -12,7 +12,7 @@ const plusJakarta = Plus_Jakarta_Sans({
 
 const title = 'CampusQuest | Discover More of College';
 const description =
-  'CampusQuest is a personalized discovery layer for college. Students find clubs, events, and opportunities that fit their interests. Organizations get discovered by interested students. Starting pilot at the University of Rhode Island.';
+  'CampusQuest is a personalized discovery layer for college. Students find clubs, events, and opportunities that fit their interests. Organizations get discovered by interested students. Piloting in Rhode Island.';
 
 export const metadata: Metadata = {
   metadataBase: siteUrl ? new URL(siteUrl) : undefined,
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
         url: '/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'CampusQuest — discover more of college. Pilot launching at the University of Rhode Island.',
+        alt: 'CampusQuest — discover more of college. Piloting in Rhode Island.',
       },
     ],
   },
