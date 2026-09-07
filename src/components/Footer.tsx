@@ -42,24 +42,24 @@ export default function Footer() {
             </h4>
             <ul className="space-y-3">
               <li>
-                <a href="/#students" className="text-sm text-white/60 hover:text-white transition-colors">
+                <Link href="/#students" className="text-sm text-white/60 hover:text-white transition-colors">
                   For Students
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="/#organizations" className="text-sm text-white/60 hover:text-white transition-colors">
+                <Link href="/#organizations" className="text-sm text-white/60 hover:text-white transition-colors">
                   For Organizations
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="/#how-it-works" className="text-sm text-white/60 hover:text-white transition-colors">
+                <Link href="/#how-it-works" className="text-sm text-white/60 hover:text-white transition-colors">
                   How It Works
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="/#pricing" className="text-sm text-white/60 hover:text-white transition-colors">
+                <Link href="/#pricing" className="text-sm text-white/60 hover:text-white transition-colors">
                   Pricing
-                </a>
+                </Link>
               </li>
               <li>
                 <Link href="/institutions" className="text-sm text-white/60 hover:text-white transition-colors">
