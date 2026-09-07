@@ -34,6 +34,8 @@ variable switches on.
 | `npm run lint` | ESLint across the repo |
 | `npm run test` | Vitest suite (once) |
 | `npm run test:watch` | Vitest in watch mode |
+| `npm run smoke` | Browser smoke test against a running dev server (needs Chrome) |
+| `npm run build:check` | Build into a scratch directory, safe to run while `dev` is up |
 | `npm run og` | Regenerate the social card image (needs Chrome) |
 | `npm run gm:prompts` | Rebuild the bundled prompt module from the source `.txt` files |
 
@@ -168,6 +170,23 @@ clock and the full warn-then-purge cycle, the analysis credit ceiling, engine
 payload filtering and the identifier checks, contract validation,
 de-identification, the pathway coverage gate, and section-by-section questionnaire
 validation.
+
+None of that touches a browser, which leaves a real gap: if the client bundle
+never reaches the page, the server-rendered HTML still looks perfect while nothing
+hydrates and every button silently does nothing. Typecheck, lint, the unit suite,
+and `next build` all pass through that. `npm run smoke` is the check that does not
+— it drives headless Chrome through consent, login, onboarding, and signup, and
+starts by clicking a checkbox purely to prove React is attached.
+
+```sh
+npm run dev          # in one shell
+npm run smoke        # in another
+```
+
+Note that `npm run build` writes to the same `.next` the dev server is serving
+from, so running it while `dev` is up overwrites those chunks and produces exactly
+the dead-page symptom above. Use `npm run build:check` instead when the dev server
+is running.
 
 ## Stack
 

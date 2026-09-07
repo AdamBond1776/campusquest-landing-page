@@ -14,6 +14,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "smoke": "node scripts/smoke.mjs",
     "og": "node scripts/generate-og-image.mjs",
     "gm:prompts": "node packages/genius-mining/scripts/generate-prompts.mjs"
   },
