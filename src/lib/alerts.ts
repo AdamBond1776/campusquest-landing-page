@@ -102,9 +102,9 @@ export async function sendRetentionWarning(options: {
     '',
     'Restarting your membership before then cancels the deletion and nothing is lost.',
     '',
-    'The anonymized copy of your answers described when you started is not part of this',
-    'deletion. It carries no name, no email and no way to identify you, and it is kept to',
-    'improve the questionnaire.',
+    'The anonymized copy described when you started is not part of this deletion. It holds the',
+    'structure of your answers and none of the words you wrote, carries no name or email, and is',
+    'kept to improve the questionnaire.',
   ].join('\n');
 
   if (!alertsConfigured()) {

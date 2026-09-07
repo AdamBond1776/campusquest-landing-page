@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import fixture from '../../assets/fixtures/example_response_GM000.json';
-import { DeidentificationError, deidentify } from '../deidentify';
+import {
+  CORPUS_FREE_TEXT_MIN_COHORT,
+  DeidentificationError,
+  assertDeidentified,
+  corpusModeFor,
+  deidentify,
+} from '../deidentify';
 import { resolveD1 } from '../resolve-d1';
 import type { QuestionnaireResponses } from '../types';
 
@@ -19,18 +25,41 @@ const input = {
   thinSpots: ['E2'],
 };
 
+describe('choosing a corpus mode', () => {
+  it('keeps free text out of a pilot-sized corpus', () => {
+    expect(corpusModeFor(0)).toBe('structured');
+    expect(corpusModeFor(24)).toBe('structured');
+    expect(corpusModeFor(CORPUS_FREE_TEXT_MIN_COHORT - 1)).toBe('structured');
+  });
+
+  it('allows free text once the cohort is large enough to hide in', () => {
+    expect(corpusModeFor(CORPUS_FREE_TEXT_MIN_COHORT)).toBe('full');
+  });
+
+  it('defaults to structured when the caller does not say', () => {
+    expect(deidentify(input).mode).toBe('structured');
+  });
+});
+
 describe('what the corpus keeps', () => {
-  it('keeps the answers the instrument needs to be improved', () => {
+  it('keeps the structure the instrument needs to be improved', () => {
     const record = deidentify(input);
 
-    expect(record.C3).toBe(responses.C3);
-    expect(record.A1).toHaveLength(6);
+    expect(record.A1_count).toBe(6);
     expect(record.B).toHaveLength(6);
-    expect(record.D3).toBe(responses.D3);
+    expect(record.C1).toEqual(responses.C1);
     expect(record.instrument_version).toBe('1.3');
   });
 
-  it('keeps the finding alongside the answers that produced it', () => {
+  it('keeps how long each answer was, which is most of what the questions ask', () => {
+    const record = deidentify(input);
+
+    expect(record.lengths.C3).toBe(responses.C3.length);
+    expect(record.lengths.D3).toBe(responses.D3.length);
+    expect(record.lengths.A1).toEqual(responses.A1.map((item) => item.text.length));
+  });
+
+  it('keeps the finding alongside the structure that produced it', () => {
     const record = deidentify(input);
 
     expect(record.primary_working_word).toBe('FIXER');
@@ -52,7 +81,17 @@ describe('what the corpus keeps', () => {
   });
 });
 
-describe('what the corpus drops', () => {
+describe('what a pilot-sized corpus drops', () => {
+  it('drops every word the student wrote', () => {
+    const record = deidentify(input);
+    const serialized = JSON.stringify(record);
+
+    expect(record.text).toBeUndefined();
+    expect(serialized).not.toContain(responses.C3.slice(0, 40));
+    expect(serialized).not.toContain(responses.A2.slice(0, 40));
+    expect(serialized).not.toContain(responses.D3.slice(0, 40));
+  });
+
   it('drops the name and the date', () => {
     const record = deidentify(input);
 
@@ -83,6 +122,24 @@ describe('what the corpus drops', () => {
   });
 });
 
+describe('the full-text corpus', () => {
+  it('keeps the narrative once the caller asks for it explicitly', () => {
+    const record = deidentify({ ...input, mode: 'full' });
+
+    expect(record.mode).toBe('full');
+    expect(record.text?.C3).toBe(responses.C3);
+    expect(record.text?.A1).toHaveLength(6);
+  });
+
+  it('still drops E2, E3 and the identifiers', () => {
+    const serialized = JSON.stringify(deidentify({ ...input, mode: 'full' }));
+
+    expect(serialized).not.toContain('Delvecchio');
+    expect(serialized).not.toContain('GM-000');
+    expect(serialized).not.toContain('which_question');
+  });
+});
+
 describe('the corpus identifier', () => {
   it('is random, so the retained copy is anonymous rather than pseudonymous', () => {
     const first = deidentify(input);
@@ -106,6 +163,13 @@ describe('failing loudly', () => {
   it('refuses to write a record with no instances', () => {
     expect(() => deidentify({ ...input, responses: { ...responses, A1: [] } })).toThrow(
       DeidentificationError
+    );
+  });
+
+  it('refuses a structured record that somehow carries free text', () => {
+    const record = deidentify({ ...input, mode: 'full' });
+    expect(() => assertDeidentified({ ...record, mode: 'structured' })).toThrow(
+      /structured corpus record carried free text/
     );
   });
 });

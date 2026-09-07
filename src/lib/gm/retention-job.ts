@@ -1,10 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 import {
   DeidentificationError,
+  corpusModeFor,
   deidentify,
   markPurged,
   markWarningSent,
   retentionActionDue,
+  type CorpusMode,
 } from '@hiddengeniuslabs/genius-mining';
 import { sendOperatorAlert, sendRetentionWarning } from '@/lib/alerts';
 import { supabaseServiceRoleKey, supabaseUrl } from '@/lib/env';
@@ -54,7 +56,10 @@ function purged(record: GeniusMiningRecord): GeniusMiningRecord {
   };
 }
 
-async function handlePurge(record: GeniusMiningRecord): Promise<JobOutcome> {
+async function handlePurge(
+  record: GeniusMiningRecord,
+  corpusMode: CorpusMode
+): Promise<JobOutcome> {
   const store = getStore();
 
   if (!record.profile || !record.d1_resolution) {
@@ -82,6 +87,7 @@ async function handlePurge(record: GeniusMiningRecord): Promise<JobOutcome> {
       confidence: record.profile.confidence,
       d1Resolution: record.d1_resolution,
       thinSpots: record.profile.thin_spots ?? [],
+      mode: corpusMode,
     });
   } catch (error) {
     const isDeidentificationProblem = error instanceof DeidentificationError;
@@ -130,7 +136,7 @@ async function handlePurge(record: GeniusMiningRecord): Promise<JobOutcome> {
   return {
     participantCode: record.participant_code,
     action: 'purged',
-    detail: `De-identified to ${corpusRecord.corpus_id}, then purged.`,
+    detail: `De-identified to ${corpusRecord.corpus_id} (${corpusMode}), then purged.`,
   };
 }
 
@@ -144,6 +150,11 @@ export async function runRetentionJob(now: Date = new Date()): Promise<JobOutcom
   const store = getStore();
   const records = await store.withRetentionClockRunning();
   const outcomes: JobOutcome[] = [];
+
+  // How much of an answer set the corpus may keep depends on how many students
+  // it would be hiding among. Resolved once per pass rather than per record so
+  // one job run cannot write two records under different rules.
+  const corpusMode = corpusModeFor((await store.list()).length);
 
   for (const record of records) {
     const due = retentionActionDue(record.retention, now);
@@ -183,7 +194,7 @@ export async function runRetentionJob(now: Date = new Date()): Promise<JobOutcom
       continue;
     }
 
-    outcomes.push(await handlePurge(record));
+    outcomes.push(await handlePurge(record, corpusMode));
   }
 
   return outcomes;

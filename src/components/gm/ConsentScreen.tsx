@@ -52,9 +52,11 @@ export default function ConsentScreen() {
             you say it&rsquo;s finished.
           </p>
           <p>
-            We keep an anonymized copy of your answers — no name, no email, no contact details — to
-            improve the questionnaire itself. That copy stays even if you cancel, because it is no
-            longer connected to you.
+            To improve the questionnaire itself we keep an anonymized copy of the{' '}
+            <em>structure</em> of your answers: which verbs you picked, which two moments you chose,
+            how the tally came out, and how long each answer was. Not a word of what you actually
+            wrote. That copy stays even if you cancel, because there is nothing in it that points
+            back at you.
           </p>
         </div>
 

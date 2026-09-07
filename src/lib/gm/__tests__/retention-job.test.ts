@@ -168,7 +168,11 @@ describe('the retention job', () => {
     expect(raw.corpus).toHaveLength(1);
     const [copy] = raw.corpus;
 
-    expect(copy.C3).toBeDefined();
+    // One record in the store is nowhere near the cohort size at which a
+    // narrative stops pointing at one person, so the copy is structure only.
+    expect(copy.mode).toBe('structured');
+    expect(copy.text).toBeUndefined();
+    expect(copy.lengths).toBeDefined();
     expect(copy.primary_working_word).toBe('FIXER');
     expect(copy.corpus_id).toMatch(/^gmc_/);
 

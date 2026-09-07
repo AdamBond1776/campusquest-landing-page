@@ -50,20 +50,45 @@ Campus scope is URI only.
 
 ---
 
-## Subscription and retention
+## Entitlement, subscription, and retention
 
-Genius Mining sits in the paid student tier. `GENIUS_MINING_TIERS` in
-[`retention.ts`](../../packages/genius-mining/src/retention.ts) is the list.
+Three things can entitle a student to Genius Mining, resolved in this order by
+`resolveEntitlement` in
+[`entitlement.ts`](../../packages/genius-mining/src/entitlement.ts):
+
+1. **An admin grant** — support cases, paper participants, testing. Records who
+   granted it and why.
+2. **An institutional seat** — a school covering the student. Buys the instrument
+   and the advisor printout at the Basic level. Deliberately does *not* buy the
+   social layer, because a university purchasing a diagnostic for academic
+   advising should not simultaneously be buying a student social network for its
+   general counsel to think about.
+3. **Their own subscription** — the paid student tier. `GENIUS_MINING_TIERS` in
+   [`subscription.ts`](../../packages/genius-mining/src/subscription.ts) is the
+   list.
+
+**The deletion clock reads the resolved entitlement, never the subscription
+directly.** This is not a stylistic preference. When a school buys a seat we
+cancel the student's own subscription and refund the unused days, Stripe emits
+`customer.subscription.deleted`, and a clock keyed to billing would read that as
+abandonment and schedule their answers for deletion on the day their school
+started paying for them.
+
+`billingAdjustmentFor` returns the corresponding billing action: cancel as
+redundant, refund prorated, and hold the price the student signed up at so being
+covered never costs them their rate.
 
 ### What starts the 30-day deletion clock
 
 | Event | Clock |
 | --- | --- |
-| Downgrade from the Genius Mining tier to Basic or Free | **Starts** |
-| Subscription cancelled | **Starts** |
+| Downgrade from the Genius Mining tier to Basic or Free, with no seat | **Starts** |
+| Subscription cancelled, with no seat | **Starts** |
+| Institutional seat expires and the student is not paying | **Starts** |
 | `past_due` — card failed, Stripe retrying | Does not start |
 | `unpaid` — retries still running | Does not start |
-| Genius Mining tier restored before day 30 | **Cleared**, nothing deleted |
+| Subscription cancelled *because* a school picked the student up | Does not start |
+| Access restored by any route before day 30 | **Cleared**, nothing deleted |
 
 A failing payment is not a loss of the tier. Deleting a paying student's profile
 because their card expired is the specific failure this distinction prevents;
@@ -85,17 +110,31 @@ rather than retrying on a schedule nobody is watching. Implemented in
 
 ### What the corpus keeps
 
-Kept: the responses, the working word, the confidence, `d1_resolution`, and
-`thin_spots`.
+The corpus has two modes, chosen by cohort size in `corpusModeFor`.
 
-Dropped: name, date, participant code, A4's activity free text, E2, and E3.
+**`structured` — the pilot default, and the only honest one at this scale.**
+Kept: the verb tags, the C1 picks, A4's three tags, how D1 resolved, the working
+word, the confidence, `thin_spots`, how many A1 moments there were, and the
+character count of every free-text answer. Dropped: **every word the student
+wrote**, plus name, date, participant code, A4's activity text, E2, and E3.
+
+A student who writes two hundred words about the night their team fell apart is
+identifiable to anyone on that campus who was there, whatever the key on the row
+is. Removing a name from a story is not the same as anonymising it, and the
+consent screen calls this corpus anonymous. Structured fields have no such
+problem: `["notice", "steady", "notice"]` describes hundreds of people. The
+lengths are what most of the open instrument questions actually need — does a
+thin C3 predict a LOW confidence, does A2 length fall off across sittings.
+
+**`full`** additionally keeps the free text, and unlocks only at
+`CORPUS_FREE_TEXT_MIN_COHORT`. Raise that threshold with whoever reviews the
+study, not because a model would like more text to learn from.
 
 The corpus record is keyed by a **random `corpus_id`, not the participant code**.
-The consent screen calls the retained copy anonymous; keeping the participant code
-would make it pseudonymous, because that code is the join key back to the
-student's account row. A4's three tags survive without the activity text, and E3
-is dropped entirely — it is what a student has never said out loud, and it does
-not belong in a corpus that outlives their consent.
+Keeping the participant code would make the copy pseudonymous, because that code
+is the join key back to the student's account row. E3 is dropped in both modes —
+it is what a student has never said out loud, and it does not belong in a corpus
+that outlives their consent.
 
 ---
 
