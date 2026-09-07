@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Where `npm run build:check` puts its output so it cannot clobber the
+    // chunks a running dev server is serving.
+    ".next-build/**",
   ]),
   {
     rules: {
