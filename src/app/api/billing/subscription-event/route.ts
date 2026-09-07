@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import type { SubscriptionStatus, Tier } from '@hiddengeniuslabs/genius-mining';
 import { stripeWebhookSecret } from '@/lib/env';
-import { applyToStudent, parseSnapshot } from '@/lib/gm/subscription';
+import { applyToStudent, parseCoverage, parseSnapshot } from '@/lib/gm/subscription';
 
 export const dynamic = 'force-dynamic';
 
@@ -85,7 +85,9 @@ export async function POST(request: Request): Promise<Response> {
         ? ('canceled' as SubscriptionStatus)
         : (subscription.status as SubscriptionStatus);
 
-    const outcome = await applyToStudent(userId, { tier: tierFor(subscription), status });
+    const outcome = await applyToStudent(userId, {
+      subscription: { tier: tierFor(subscription), status },
+    });
 
     return NextResponse.json(
       outcome ?? { ignored: 'No Genius Mining record for that account.' }
@@ -107,21 +109,30 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
   }
 
-  let parsed: { user_id?: string; subscription?: unknown };
+  let parsed: { user_id?: string; subscription?: unknown; coverage?: unknown };
   try {
     parsed = JSON.parse(body);
   } catch {
     return NextResponse.json({ error: 'Body was not JSON.' }, { status: 400 });
   }
 
-  const snapshot = parseSnapshot(parsed.subscription);
-  if (!parsed.user_id || !snapshot) {
+  const snapshot = parsed.subscription === undefined ? undefined : parseSnapshot(parsed.subscription);
+  // `null` clears the seat, an absent key leaves it alone, and an object sets it.
+  const coverage = parsed.coverage === undefined ? undefined : parseCoverage(parsed.coverage);
+
+  if (!parsed.user_id || (parsed.subscription !== undefined && !snapshot)) {
     return NextResponse.json(
-      { error: 'Expected { user_id, subscription: { tier, status } }.' },
+      {
+        error:
+          'Expected { user_id, subscription?: { tier, status }, coverage?: { campus_id, starts_at, ends_at } | null }.',
+      },
       { status: 400 }
     );
   }
 
-  const outcome = await applyToStudent(parsed.user_id, snapshot);
+  const outcome = await applyToStudent(parsed.user_id, {
+    subscription: snapshot ?? undefined,
+    coverage,
+  });
   return NextResponse.json(outcome ?? { ignored: 'No Genius Mining record for that account.' });
 }

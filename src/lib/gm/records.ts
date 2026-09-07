@@ -1,8 +1,10 @@
 import {
   initialAnalysisLedger,
   initialRetentionState,
+  type AdminGrant,
   type AnalysisLedger,
   type D1Resolution,
+  type InstitutionalCoverage,
   type Profile,
   type QuestionnaireResponses,
   type RetentionState,
@@ -48,6 +50,16 @@ export type GeniusMiningRecord = {
   ledger: AnalysisLedger;
   retention: RetentionState;
   subscription: SubscriptionSnapshot;
+  /**
+   * A seat the student's school bought for them, if any.
+   *
+   * Held alongside the subscription rather than folded into it, because the two
+   * change independently and the retention clock has to read both. A covered
+   * student can cancel their card without losing anything.
+   */
+  coverage: InstitutionalCoverage | null;
+  /** Named for the column: `grant` is reserved in Postgres. */
+  admin_grant: AdminGrant | null;
   created_at: string;
   updated_at: string;
 };
@@ -84,6 +96,8 @@ export function newRecord(options: {
     ledger: initialAnalysisLedger(),
     retention: initialRetentionState(),
     subscription: options.subscription ?? { tier: 'premium', status: 'active' },
+    coverage: null,
+    admin_grant: null,
     created_at: now,
     updated_at: now,
   };

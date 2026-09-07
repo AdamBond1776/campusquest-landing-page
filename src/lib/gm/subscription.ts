@@ -1,5 +1,8 @@
 import {
-  applySubscriptionChange,
+  applyAccessChange,
+  billingAdjustmentFor,
+  type BillingAdjustment,
+  type InstitutionalCoverage,
   type SubscriptionSnapshot,
   type SubscriptionStatus,
   type Tier,
@@ -32,32 +35,57 @@ export function parseSnapshot(input: unknown): SubscriptionSnapshot | null {
   return { tier, status };
 }
 
+export function parseCoverage(input: unknown): InstitutionalCoverage | null {
+  if (typeof input !== 'object' || input === null) return null;
+
+  const candidate = input as Partial<InstitutionalCoverage>;
+  if (typeof candidate.campus_id !== 'string' || !candidate.campus_id) return null;
+  if (typeof candidate.starts_at !== 'string') return null;
+
+  return {
+    campus_id: candidate.campus_id,
+    covers_genius_mining: candidate.covers_genius_mining !== false,
+    starts_at: candidate.starts_at,
+    ends_at: typeof candidate.ends_at === 'string' ? candidate.ends_at : null,
+  };
+}
+
 export type ApplyOutcome = {
   participantCode: string;
   transition: 'clock_started' | 'clock_cleared' | 'unchanged';
   reason: string;
+  entitled: boolean;
+  entitlementSource: string;
+  billing: BillingAdjustment;
 };
 
 /**
- * Folds a subscription change into a student's record.
+ * Folds a change in what a student is entitled to into their record.
  *
- * The decision itself lives in the Genius Mining module: a cancellation or a
- * downgrade out of the Genius Mining tier starts the 30-day clock, restoring the
- * tier clears it, and a failing card changes nothing.
+ * Both a Stripe event and an institutional contract land here, because the
+ * decision depends on both at once. The 30-day clock reads the resolved
+ * entitlement, so cancelling a card that a university has already replaced is a
+ * no-op rather than a countdown to deletion.
  */
 export async function applyToStudent(
   userId: string,
-  snapshot: SubscriptionSnapshot
+  changes: { subscription?: SubscriptionSnapshot; coverage?: InstitutionalCoverage | null }
 ): Promise<ApplyOutcome | null> {
   const store = getStore();
   const record = await store.findByUserId(userId);
   if (!record) return null;
 
-  const decision = applySubscriptionChange(record.retention, snapshot);
+  const subscription = changes.subscription ?? record.subscription;
+  const coverage = changes.coverage === undefined ? record.coverage : changes.coverage;
+  const grant = record.admin_grant;
+
+  const decision = applyAccessChange(record.retention, { subscription, coverage, grant });
+  const billing = billingAdjustmentFor({ subscription, coverage, grant });
 
   await store.save({
     ...record,
-    subscription: snapshot,
+    subscription,
+    coverage,
     retention: decision.state,
   });
 
@@ -70,7 +98,23 @@ export async function applyToStudent(
         decision.reason,
         '',
         `Purge due: ${decision.state.purge_due_at}`,
-        'Restoring the Genius Mining tier before then cancels the purge and deletes nothing.',
+        'Restoring access before then cancels the purge and deletes nothing.',
+      ].join('\n'),
+    });
+  }
+
+  if (billing.action === 'cancel_as_redundant') {
+    await sendOperatorAlert({
+      severity: 'action_required',
+      subject: 'Cancel a subscription an institution now covers',
+      participantCode: record.participant_code,
+      body: [
+        billing.reason,
+        '',
+        'Cancel the Stripe subscription and refund the unused days.',
+        billing.priceLock
+          ? `Hold their rate at ${billing.priceLock} if they ever subscribe again.`
+          : 'No price id on file; check Stripe before cancelling.',
       ].join('\n'),
     });
   }
@@ -79,5 +123,8 @@ export async function applyToStudent(
     participantCode: record.participant_code,
     transition: decision.transition,
     reason: decision.reason,
+    entitled: decision.entitlement.geniusMining,
+    entitlementSource: decision.entitlement.source,
+    billing,
   };
 }

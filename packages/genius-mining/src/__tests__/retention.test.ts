@@ -2,13 +2,12 @@ import { describe, expect, it } from 'vitest';
 import {
   RETENTION_WINDOW_DAYS,
   applySubscriptionChange,
-  hasGeniusMining,
   initialRetentionState,
   markPurged,
   markWarningSent,
   retentionActionDue,
-  type SubscriptionSnapshot,
 } from '../retention';
+import { hasGeniusMining, type SubscriptionSnapshot } from '../subscription';
 import type { RetentionState } from '../types';
 
 const LAPSE = new Date('2026-03-01T12:00:00.000Z');

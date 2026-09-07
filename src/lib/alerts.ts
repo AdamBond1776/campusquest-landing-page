@@ -1,7 +1,7 @@
 import { Resend } from 'resend';
 import { alertRecipients, alertsConfigured, mailFrom, resendApiKey } from '@/lib/env';
 
-export type AlertSeverity = 'critical' | 'warning' | 'info';
+export type AlertSeverity = 'critical' | 'action_required' | 'warning' | 'info';
 
 export type OperatorAlert = {
   severity: AlertSeverity;
@@ -37,7 +37,7 @@ export async function sendOperatorAlert(alert: OperatorAlert): Promise<DeliveryR
   const subject = `[Genius Mining] ${alert.subject}`;
 
   const logLine = `${subject}\n${body}`;
-  if (alert.severity === 'critical') {
+  if (alert.severity === 'critical' || alert.severity === 'action_required') {
     console.error(logLine);
   } else {
     console.warn(logLine);

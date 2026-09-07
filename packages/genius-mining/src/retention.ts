@@ -1,3 +1,6 @@
+import type { Entitlement, EntitlementInputs } from './entitlement';
+import { resolveEntitlement } from './entitlement';
+import { inPaymentGrace, type SubscriptionSnapshot } from './subscription';
 import type { MembershipStatus, RetentionState } from './types';
 
 export const RETENTION_WINDOW_DAYS = 30;
@@ -5,64 +8,6 @@ export const FIRST_WARNING_DAY = 7;
 export const SECOND_WARNING_DAY = 25;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-
-/** Tiers that entitle a student to Genius Mining. */
-export const GENIUS_MINING_TIERS = ['premium'] as const;
-
-export type Tier = 'free' | 'basic' | 'premium' | 'club';
-
-/**
- * Stripe subscription statuses, plus `none` for a student with no subscription
- * record at all.
- */
-export type SubscriptionStatus =
-  | 'none'
-  | 'trialing'
-  | 'active'
-  | 'past_due'
-  | 'unpaid'
-  | 'paused'
-  | 'incomplete'
-  | 'incomplete_expired'
-  | 'canceled';
-
-export type SubscriptionSnapshot = {
-  tier: Tier;
-  status: SubscriptionStatus;
-};
-
-/**
- * Payment trouble is not the same as losing the tier.
- *
- * `past_due` and `unpaid` are both recoverable — the card failed and Stripe is
- * still retrying. Neither starts the deletion clock. When Stripe gives up it
- * emits `canceled`, and that is the event we act on. Deleting a paying student's
- * profile because their card expired is the failure mode this list exists to
- * prevent.
- */
-export const PAYMENT_GRACE_STATUSES: SubscriptionStatus[] = ['past_due', 'unpaid', 'incomplete'];
-
-/** Statuses that mean the subscription is genuinely over. */
-export const TERMINAL_STATUSES: SubscriptionStatus[] = [
-  'none',
-  'canceled',
-  'incomplete_expired',
-  'paused',
-];
-
-/**
- * Whether a subscription still entitles the student to Genius Mining.
- *
- * True for an active or trialing Genius Mining tier, and still true while a
- * payment is failing. False once the subscription actually ends, and false the
- * moment the tier drops to Basic or Free even if billing is otherwise healthy —
- * a downgrade is a loss of the tier, and it starts the clock.
- */
-export function hasGeniusMining(subscription: SubscriptionSnapshot): boolean {
-  const tierQualifies = (GENIUS_MINING_TIERS as readonly string[]).includes(subscription.tier);
-  if (!tierQualifies) return false;
-  return !TERMINAL_STATUSES.includes(subscription.status);
-}
 
 export function initialRetentionState(): RetentionState {
   return {
@@ -84,19 +29,23 @@ export type RetentionDecision = {
 };
 
 /**
- * Folds a subscription change into the retention state.
+ * Folds an entitlement change into the retention state.
  *
- * Losing the Genius Mining tier — by cancellation or by downgrade to Basic or
- * Free — stamps `lapsed_at` and schedules the purge 30 days out. Restoring the
- * tier before the purge runs clears the lapse and deletes nothing. A card that
- * is merely failing changes nothing at all.
+ * The clock runs on entitlement, not on billing. A student who loses Genius
+ * Mining — by cancelling, by downgrading to Basic or Free, or by their school's
+ * seat expiring — gets `lapsed_at` stamped and a purge scheduled 30 days out.
+ * Regaining it by any route clears the lapse and deletes nothing, which is the
+ * whole reason this takes an entitlement rather than a subscription: when an
+ * institution picks a student up, their card stops being charged, and a clock
+ * keyed to the card would read that as abandonment and delete their answers.
  *
- * Once a record is purged it stays purged; restoring a subscription cannot
- * un-delete answers, and the consent copy promises the student exactly that.
+ * Once a record is purged it stays purged. Restoring access cannot un-delete
+ * answers, and the consent copy promises the student exactly that.
  */
-export function applySubscriptionChange(
+export function applyEntitlementChange(
   current: RetentionState,
-  subscription: SubscriptionSnapshot,
+  entitlement: Entitlement,
+  options: { subscription?: SubscriptionSnapshot } = {},
   now: Date = new Date()
 ): RetentionDecision {
   if (current.membership_status === 'purged') {
@@ -107,16 +56,14 @@ export function applySubscriptionChange(
     };
   }
 
-  const entitled = hasGeniusMining(subscription);
+  const grace = options.subscription ? inPaymentGrace(options.subscription) : false;
 
-  if (entitled) {
+  if (entitlement.geniusMining) {
     if (current.lapsed_at === null && current.membership_status === 'active') {
       return {
         state: current,
         transition: 'unchanged',
-        reason: PAYMENT_GRACE_STATUSES.includes(subscription.status)
-          ? `Subscription is ${subscription.status}. A failing payment does not start the deletion clock.`
-          : 'Still an active member.',
+        reason: entitlement.reason,
       };
     }
 
@@ -130,15 +77,15 @@ export function applySubscriptionChange(
         warning_25_sent_at: null,
       },
       transition: 'clock_cleared',
-      reason: 'Genius Mining tier restored before the purge ran. Nothing is deleted.',
+      reason: `Access restored before the purge ran, so nothing is deleted. ${entitlement.reason}`,
     };
   }
 
-  if (PAYMENT_GRACE_STATUSES.includes(subscription.status)) {
+  if (grace) {
     return {
       state: current,
       transition: 'unchanged',
-      reason: `Subscription is ${subscription.status}. A failing payment does not start the deletion clock.`,
+      reason: `Subscription is ${options.subscription!.status}. A failing payment does not start the deletion clock.`,
     };
   }
 
@@ -151,8 +98,9 @@ export function applySubscriptionChange(
   }
 
   const lapsedAt = now;
+  const status = options.subscription?.status ?? 'none';
   const membershipStatus: MembershipStatus =
-    subscription.status === 'canceled' || subscription.status === 'none' ? 'cancelled' : 'lapsed';
+    status === 'canceled' || status === 'none' ? 'cancelled' : 'lapsed';
 
   return {
     state: {
@@ -164,11 +112,41 @@ export function applySubscriptionChange(
       warning_25_sent_at: null,
     },
     transition: 'clock_started',
-    reason:
-      subscription.status === 'canceled' || subscription.status === 'none'
-        ? 'Subscription cancelled. Identified data is deleted in 30 days.'
-        : `Downgraded to ${subscription.tier}, which does not include Genius Mining. Identified data is deleted in 30 days.`,
+    reason: `${entitlement.reason} Identified data is deleted in ${RETENTION_WINDOW_DAYS} days.`,
   };
+}
+
+/**
+ * Convenience wrapper for the common case: a student with no institutional seat
+ * whose access rises and falls with their own subscription.
+ */
+export function applySubscriptionChange(
+  current: RetentionState,
+  subscription: SubscriptionSnapshot,
+  now: Date = new Date()
+): RetentionDecision {
+  return applyEntitlementChange(
+    current,
+    resolveEntitlement({ subscription }, now),
+    { subscription },
+    now
+  );
+}
+
+/** Resolves the entitlement and folds it in, in one step. */
+export function applyAccessChange(
+  current: RetentionState,
+  inputs: EntitlementInputs,
+  now: Date = new Date()
+): RetentionDecision & { entitlement: Entitlement } {
+  const entitlement = resolveEntitlement(inputs, now);
+  const decision = applyEntitlementChange(
+    current,
+    entitlement,
+    { subscription: inputs.subscription },
+    now
+  );
+  return { ...decision, entitlement };
 }
 
 export type RetentionAction =

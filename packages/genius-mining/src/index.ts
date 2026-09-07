@@ -11,6 +11,8 @@ export * from './payload';
 export * from './validate';
 export * from './prompts';
 export * from './engine';
+export * from './subscription';
+export * from './entitlement';
 export * from './retention';
 export * from './credits';
 export * from './deidentify';
