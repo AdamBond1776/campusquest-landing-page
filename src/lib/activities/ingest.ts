@@ -19,6 +19,11 @@ import { getActivityStore } from '@/lib/activities/store';
 import { ATHLETICS_FEEDS, fetchAthletics } from '@/lib/activities/sources/athletics';
 import { LOCALIST_FEEDS, fetchLocalist } from '@/lib/activities/sources/localist';
 import { ENGAGE_FEEDS, fetchEngage } from '@/lib/activities/sources/engage';
+import {
+  CURATED_DIRECTORIES,
+  applyOverlay,
+  type CuratedDirectory,
+} from '@/lib/activities/sources/curated';
 
 export type IngestReport = {
   source: SourceId;
@@ -27,6 +32,10 @@ export type IngestReport = {
   added: number;
   updated: number;
   staled: number;
+  /** Registered organizations the hand-compiled list does not confirm. */
+  unconfirmed?: number;
+  /** Curated clubs that matched nothing but resemble a registered one. */
+  review?: { club: string; candidates: string[] }[];
   /** Set when the feed failed. One bad source must not abort the others. */
   error?: string;
 };
@@ -75,15 +84,15 @@ function carryOver(existing: Activity, draft: ActivityDraft): HumanOwned {
 }
 
 function fromDraft(draft: ActivityDraft, now: string): Activity {
-  const { needs_review, working_words, low_commitment_entry, ...rest } = draft;
+  const { needs_review, working_words, low_commitment_entry, verified_by, ...rest } = draft;
 
   return {
     ...rest,
     first_seen: now,
     last_seen: now,
-    status: needs_review ? 'pending' : 'listed',
-    verified_at: null,
-    verified_by: null,
+    status: verified_by ? 'verified' : needs_review ? 'pending' : 'listed',
+    verified_at: verified_by ? now : null,
+    verified_by: verified_by ?? null,
     working_words: working_words ?? [],
     low_commitment_entry: low_commitment_entry ?? null,
   };
@@ -155,7 +164,13 @@ export function reconcile(
       continue;
     }
 
-    const { needs_review: _needsReview, working_words: _ww, low_commitment_entry: _lce, ...fields } = draft;
+    const {
+      needs_review: _needsReview,
+      working_words: _ww,
+      low_commitment_entry: _lce,
+      verified_by: _vb,
+      ...fields
+    } = draft;
 
     rows.push({
       ...fields,
@@ -224,6 +239,7 @@ export function campusesWithFeeds(): string[] {
       ...Object.keys(ATHLETICS_FEEDS),
       ...Object.keys(LOCALIST_FEEDS),
       ...Object.keys(ENGAGE_FEEDS),
+      ...Object.keys(CURATED_DIRECTORIES),
     ]),
   ];
 }
@@ -239,6 +255,7 @@ export async function runIngest(campusId: string, now: Date = new Date()): Promi
   const store = getActivityStore();
   const existing = await store.all(campusId);
   const reports: IngestReport[] = [];
+  let feedsSucceeded = false;
 
   for (const puller of pullersFor(campusId)) {
     const base: IngestReport = {
@@ -256,6 +273,7 @@ export async function runIngest(campusId: string, now: Date = new Date()): Promi
       const result = reconcile(scoped, drafts, now);
 
       await store.upsert(result.rows);
+      feedsSucceeded = true;
       reports.push({
         ...base,
         // Distinct activities, not raw feed entries: a recurring event arrives
@@ -273,5 +291,48 @@ export async function runIngest(campusId: string, now: Date = new Date()): Promi
     }
   }
 
+  // The overlay runs last, over whatever the feeds just wrote. Skipped when
+  // every feed failed, since there would be nothing fresh to verify against.
+  const directory = CURATED_DIRECTORIES[campusId];
+  if (directory && feedsSucceeded) {
+    reports.push(await applyCuratedOverlay(campusId, directory, now));
+  }
+
   return reports;
+}
+
+async function applyCuratedOverlay(
+  campusId: string,
+  directory: CuratedDirectory,
+  now: Date
+): Promise<IngestReport> {
+  const store = getActivityStore();
+  const base: IngestReport = {
+    source: 'curated',
+    campus_id: campusId,
+    fetched: directory.clubs.length,
+    added: 0,
+    updated: 0,
+    staled: 0,
+  };
+
+  try {
+    const current = await store.all(campusId);
+    const overlay = applyOverlay(current, directory, now);
+
+    const existingCurated = current.filter((row) => row.source === 'curated');
+    const merged = reconcile(existingCurated, overlay.added, now);
+
+    await store.upsert([...overlay.verified, ...merged.rows]);
+
+    return {
+      ...base,
+      added: merged.added,
+      updated: overlay.verified.length,
+      unconfirmed: overlay.unconfirmed,
+      review: overlay.review,
+    };
+  } catch (error) {
+    return { ...base, error: error instanceof Error ? error.message : String(error) };
+  }
 }

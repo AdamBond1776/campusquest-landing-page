@@ -138,6 +138,11 @@ export type ActivityDraft = Omit<
    * such as a registrar note that the organization may no longer be recognised.
    */
   needs_review?: boolean;
+  /**
+   * Set when the row arrives already confirmed by a person, as the hand-compiled
+   * directory does. Everything ingested from a feed leaves this unset.
+   */
+  verified_by?: string;
 };
 
 /**

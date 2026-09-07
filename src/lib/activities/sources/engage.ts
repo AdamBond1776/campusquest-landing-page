@@ -81,9 +81,19 @@ export function needsReview(name: string): boolean {
   return NEEDS_RECOGNITION.test(name);
 }
 
-/** Strip the parenthetical registrar note so the card shows the real name. */
+/**
+ * Administrative recognition labels Engage appends to the organization name.
+ *
+ * Eighty of URI's 163 organizations are stored as "Photography Club (URI
+ * STUDENT SENATE)". That suffix is a registrar's recognition status, not part
+ * of what anyone calls the club, and showing it on a card is noise.
+ */
+const ADMIN_SUFFIX =
+  /\s*[-–]?\s*\((?:[^)]*student senate[^)]*|affiliate|pending[^)]*|[^)]*re-?recognition[^)]*)\)\s*/gi;
+
+/** Strip registrar bookkeeping so the card shows the name students use. */
 function cleanName(name: string): string {
-  return name.replace(/\s*\([^)]*re-?recognition[^)]*\)\s*/i, ' ').replace(/\s+/g, ' ').trim();
+  return name.replace(ADMIN_SUFFIX, ' ').replace(/\s+[-–]\s*$/, '').replace(/\s+/g, ' ').trim();
 }
 
 export function toActivities(response: EngageResponse, feed: EngageFeed): ActivityDraft[] {
