@@ -46,13 +46,15 @@ variable switches on.
 | Path | What it is |
 | --- | --- |
 | `/` | Marketing page |
-| `/signup` | Four-step onboarding: role, interests, plan, email |
+| `/signup` | Four-step onboarding: role, interests, plan, then email and birth year |
 | `/signup?finish=1` | The same wizard for an account that has a session but no answers yet |
 | `/login` | Magic-link login |
 | `/welcome` | Post-signup and post-login confirmation |
 | `/auth/callback` | Exchanges the emailed code for a session |
 | `/auth/auth-code-error` | Expired or rejected link |
 | `/activities` | The activity directory: clubs, campus events, and athletics fixtures |
+| `/settings` | Account details and self-service deletion |
+| `/guardian/confirm` | Where a parent or guardian lands from the approval email |
 | `/institutions` | Level Up Rhode Island: the public institutional page and the demand button |
 | `/privacy` | Privacy and data use notice |
 | `/terms` | Terms of use |
@@ -63,6 +65,7 @@ variable switches on.
 | `/admin/genius-mining` | Pathway coverage, instrument health, retention summary |
 | `/api/cron/retention` | Daily retention job. Requires `CRON_SECRET` as a bearer token |
 | `/api/cron/activities` | Refreshes the directory from every configured feed. Honours `CRON_SECRET` when set |
+| `/api/reports/resolve` | Signed one-click links that confirm or close a student correction from the operator's inbox |
 | `/api/billing/subscription-event` | Stripe webhook |
 
 ## Authentication
@@ -218,6 +221,34 @@ constant time. The privacy notice states what that does **not** prove: someone
 at that address agreed, which is not the same as a family relationship. That
 limit is exactly why the minor pathway stops at the directory.
 
+The age question is asked at sign-up as a birth year, not an "I am 18" checkbox.
+A checkbox records that someone clicked a checkbox; a year records what they
+told us, which is the thing the rule turns on. Only the year is stored — a full
+date of birth is more identifying than the rule needs — and the bracket reads
+the youngest the student could be, so the uncertainty errs safe.
+
+Signed-out visitors are not gated. An age wall in front of a fixture list anyone
+can read on the university's own site would be theatre; the gate exists to keep
+the promises made to a guardian about an *account*.
+
+## Deleting an account
+
+`/settings` erases the account outright: the Genius Mining record, directory
+corrections, campus interest, the age and guardian record, and the auth user.
+`src/lib/account/__tests__/delete.test.ts` asserts the set of tables, because
+the real failure is a table added later and quietly never wired in.
+
+Genius Mining goes through the retention job's own purge rather than a direct
+delete, so the de-identified corpus copy the privacy notice promises is made
+under the same rules the scheduled job uses. If de-identification fails, the
+whole deletion stops and alerts — deleting everything else and leaving the
+identified answers behind is the worst available outcome.
+
+Two things survive, both described before anyone signs up: the de-identified
+corpus record, which carries the shape of an answer set and none of its words,
+and the listings themselves. Reporting that a club has folded does not un-fold
+the club.
+
 ## Legal and consent
 
 `/privacy` and `/terms` are generated from `src/lib/legal.ts`, which is also
@@ -305,9 +336,9 @@ optional and documented there. The short version:
 | --- | --- |
 | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Auth uses the local mock; both are needed for the real thing |
 | `SUPABASE_SERVICE_ROLE_KEY` | The retention job and billing webhook cannot reach rows with no session |
-| `ANTHROPIC_API_KEY` | Analyses use the stand-in engine |
+| `ANTHROPIC_API_KEY` | Analyses use the stand-in engine in development, and **are refused outright in production** rather than returning a fabricated profile |
 | `RESEND_API_KEY` | Email is logged instead of sent |
-| `CRON_SECRET` | The retention endpoint refuses to run at all |
+| `CRON_SECRET` | The retention endpoint refuses to run at all, and correction emails arrive without their one-click resolve links |
 | `GM_ALERT_EMAIL` | Alerts go to the `gm-alerts` group by default |
 | `GM_ADMIN_EMAILS` | `/admin/genius-mining` returns 404 in production |
 | `CQ_PARTNERSHIP_EMAIL` | `/institutions` shows the `partners@campusquestapp.com` placeholder |
@@ -316,6 +347,8 @@ optional and documented there. The short version:
 | `CQ_PRIVACY_EMAIL` | Data requests fall back to `CQ_PARTNERSHIP_EMAIL` |
 | `NEXT_PUBLIC_SOCIAL_INSTAGRAM`, `_TWITTER`, `_LINKEDIN` | The footer renders no social icons rather than dead links |
 | `CQ_LOCAL_ACTIVITIES_PATH` | The directory falls back to a JSON file under the temp directory |
+| `CQ_LOCAL_AGE_PATH`, `CQ_LOCAL_REPORTS_PATH` | Age records and corrections fall back to JSON files under the temp directory |
+| `GM_ALLOW_MOCK_IN_PRODUCTION` | Production refuses to run an analysis with no key. Set to `true` only for a staging deploy where fake profiles are understood |
 | `NEXT_PUBLIC_SITE_URL` | Social card and canonical URLs fall back to the Vercel host |
 
 ## Supabase setup
@@ -331,7 +364,8 @@ Two pieces are not code and have to be done in the Supabase dashboard.
    - [`0004_activities.sql`](supabase/migrations/0004_activities.sql) —
      the activity directory, with public read limited to listed and verified rows.
    - [`0005_reports_and_age.sql`](supabase/migrations/0005_reports_and_age.sql) —
-     student directory corrections, and the age record on `gm_sessions`.
+     student directory corrections in `cq_activity_reports`, and `cq_age_records`
+     for the age bracket and any guardian consent.
    - [`0003_campus_demand.sql`](supabase/migrations/0003_campus_demand.sql) —
      students asking their school to cover Genius Mining.
 2. **Point auth at Resend and allow the callback.** Enable the email provider, set
